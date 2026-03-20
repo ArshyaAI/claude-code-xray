@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-03-20T22:31:56.262Z",
+  "source": {
+    "companyId": "7aee4342-3e8a-48a2-aee4-065a9c9903a5",
+    "companyName": "DeFactory-v2"
+  },
+  "includes": {
+    "company": true,
+    "agents": true
+  },
+  "company": {
+    "path": "COMPANY.md",
+    "name": "DeFactory-v2",
+    "description": null,
+    "brandColor": null,
+    "requireBoardApprovalForNewAgents": false
+  },
+  "agents": [
+    {
+      "slug": "reviewer",
+      "name": "Reviewer",
+      "path": "agents/reviewer/AGENTS.md",
+      "role": "qa",
+      "title": "Cross-Model Code Reviewer",
+      "icon": null,
+      "capabilities": "Adversarial code review via Codex. Reviews all PRs from Builders. Finds bugs Claude misses. Read-only — never modifies code.",
+      "reportsToSlug": "ceo",
+      "adapterType": "codex_local",
+      "adapterConfig": {
+        "model": "gpt-5.3-codex",
+        "graceSec": 30,
+        "dangerouslyBypassApprovalsAndSandbox": true
+      },
+      "runtimeConfig": {
+        "heartbeat": {
+          "enabled": true,
+          "maxConcurrentRuns": 1
+        }
+      },
+      "permissions": {},
+      "budgetMonthlyCents": 0,
+      "metadata": null
+    },
+    {
+      "slug": "builder-1",
+      "name": "Builder-1",
+      "path": "agents/builder-1/AGENTS.md",
+      "role": "engineer",
+      "title": "Founding Engineer",
+      "icon": "hammer",
+      "capabilities": "Full-stack engineering, implementation, testing, deployment. Ships code on nikin-wrapper and related repos.",
+      "reportsToSlug": "ceo",
+      "adapterType": "claude_local",
+      "adapterConfig": {
+        "model": "claude-sonnet-4-6",
+        "command": "claude",
+        "graceSec": 30,
+        "maxTurnsPerRun": 200,
+        "dangerouslySkipPermissions": true
+      },
+      "runtimeConfig": {
+        "heartbeat": {
+          "enabled": true,
+          "maxConcurrentRuns": 1
+        }
+      },
+      "permissions": {},
+      "budgetMonthlyCents": 0,
+      "metadata": null
+    },
+    {
+      "slug": "qa",
+      "name": "QA",
+      "path": "agents/qa/AGENTS.md",
+      "role": "qa",
+      "title": "Quality Assurance Engineer",
+      "icon": null,
+      "capabilities": "Runs eval gates, real tests, integration checks. Verifies Builder output before merge. Uses /qa and /qa-only skills. Flags mock-only coverage.",
+      "reportsToSlug": "ceo",
+      "adapterType": "claude_local",
+      "adapterConfig": {
+        "model": "claude-sonnet-4-6",
+        "command": "claude",
+        "graceSec": 30,
+        "maxTurnsPerRun": 50,
+        "dangerouslySkipPermissions": true
+      },
+      "runtimeConfig": {
+        "heartbeat": {
+          "enabled": true,
+          "maxConcurrentRuns": 1
+        }
+      },
+      "permissions": {},
+      "budgetMonthlyCents": 0,
+      "metadata": null
+    },
+    {
+      "slug": "evaluator",
+      "name": "Evaluator",
+      "path": "agents/evaluator/AGENTS.md",
+      "role": "researcher",
+      "title": "Score & Promotion Evaluator",
+      "icon": null,
+      "capabilities": "Impartial scoring engine. Runs hard gates (build/test/lint/review/safety), computes 7-dimension score vector, writes to evo.db. Never advocates — just measures.",
+      "reportsToSlug": "ceo",
+      "adapterType": "claude_local",
+      "adapterConfig": {
+        "model": "claude-sonnet-4-6",
+        "command": "claude",
+        "graceSec": 30,
+        "maxTurnsPerRun": 50,
+        "dangerouslySkipPermissions": true
+      },
+      "runtimeConfig": {
+        "heartbeat": {
+          "enabled": true,
+          "maxConcurrentRuns": 1
+        }
+      },
+      "permissions": {},
+      "budgetMonthlyCents": 0,
+      "metadata": null
+    },
+    {
+      "slug": "ceo",
+      "name": "CEO",
+      "path": "agents/ceo/AGENTS.md",
+      "role": "ceo",
+      "title": "Chief Executive Officer",
+      "icon": null,
+      "capabilities": "Strategy, hiring, unblocking, P&L. Owns the company direction and delegates to builders.",
+      "reportsToSlug": null,
+      "adapterType": "claude_local",
+      "adapterConfig": {
+        "model": "claude-sonnet-4-6",
+        "command": "claude",
+        "graceSec": 30,
+        "maxTurnsPerRun": 200,
+        "dangerouslySkipPermissions": true
+      },
+      "runtimeConfig": {
+        "heartbeat": {
+          "enabled": true,
+          "intervalSec": 7200,
+          "maxConcurrentRuns": 1
+        }
+      },
+      "permissions": {
+        "canCreateAgents": true
+      },
+      "budgetMonthlyCents": 0,
+      "metadata": null
+    }
+  ],
+  "requiredSecrets": []
+}
