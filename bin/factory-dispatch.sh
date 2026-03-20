@@ -517,7 +517,35 @@ Read ALL of the following that exist (skip any that don't):
    Read its \`final_status\`, \`items_completed\`, \`items_failed\` to understand
    how the last run went. If it was BLOCKED, understand why before starting.
 
-## 1.2 Classify PROGRAM.md Items
+## 1.2 Product Architecture Validation (REQUIRED — complete before classifying items)
+
+Before planning or classifying any items, answer ALL of these in SCOREBOARD.md under
+\`## Architecture Validation\`:
+
+1. **Core value:** Read the repo's main source files. What is the CORE purpose/value this
+   repo delivers? (1 sentence)
+2. **Plan alignment:** For each planned item, ask: "Does this serve the core value or is
+   it a nice-to-have?" Flag any item that doesn't serve the core value as LOW PRIORITY.
+3. **Integration pattern check (if plugin/integration repo):** What system does this run IN?
+   Find existing plugins or extensions in the repo (e.g. \`.clawdbot/extensions/\`, \`plugins/\`).
+   FOLLOW the existing integration pattern — do NOT invent a new one.
+4. **Dependency check:** Does any planned item require a library not already in package.json?
+   If yes, flag it as RISK and log it as a concern — do not install without justification.
+
+Write the validation output in SCOREBOARD.md:
+\`\`\`
+## Architecture Validation
+Core value: [1-sentence description]
+Items serving core value: [N / total]
+Items flagged as nice-to-have: [list]
+Integration pattern: [pattern name / "N/A"]
+New dependency risks: [none / list]
+\`\`\`
+
+If you cannot identify the core value from the code: write "UNKNOWN — proceeding with
+caution" and bias your backlog toward fixes and tests rather than new features.
+
+## 1.3 Classify PROGRAM.md Items
 
 Read PROGRAM.md. For each \`[ ]\` unchecked item, mentally classify it:
 
@@ -531,7 +559,7 @@ Read PROGRAM.md. For each \`[ ]\` unchecked item, mentally classify it:
 Items tagged with \`[P0]\` or \`[RISK]\` in PROGRAM.md are pre-classified.
 If PROGRAM.md doesn't tag items, classify them yourself based on the above.
 
-## 1.3 Write Sprint Intent
+## 1.4 Write Sprint Intent
 
 Create SCOREBOARD.md now with this header and a "Sprint Intent" section:
 
@@ -550,7 +578,7 @@ WTF-likelihood: 0%
 context? What did we learn from the last run? What cross-repo signals matter?]
 \`\`\`
 
-## 1.4 Discover Eval Commands
+## 1.5 Discover Eval Commands
 
 Check CLAUDE.md for a \`## Commands\` section. If it exists, use those exact
 commands as your eval gate. If CLAUDE.md has no commands section, fall back to:
@@ -561,7 +589,7 @@ commands as your eval gate. If CLAUDE.md has no commands section, fall back to:
 
 Record the chosen eval commands in SCOREBOARD.md under \`## Baseline\`.
 
-## 1.5 Establish Baseline
+## 1.6 Establish Baseline
 
 Run the eval commands you identified. Record the result:
 
@@ -992,7 +1020,7 @@ This format is required for factory-heartbeat.sh and factory-post-run.sh compati
 
 ## Execution Order Summary
 
-1. THINK  — Read context, classify items, write sprint intent, find eval commands, baseline
+1. THINK  — Read context, validate architecture (1.2), classify items, write sprint intent, find eval commands, baseline
 2. PLAN   — Write sprint plan for P0/RISK items
 3. BUILD  — Main loop: pick → research → read → implement → eval → gate → WTF check
    - Every ${qa_interval} items: QA Gate (Phase 6/Test)
@@ -1033,7 +1061,7 @@ for entry in "${DISPATCH_LIST[@]}"; do
 
   # ── Step 0: Merge pending factory PRs (prevents duplicate work) ──────────
   (cd "$repo_path" && {
-    local_prs=$(gh pr list --state open --label factory-dispatch --json number,title,mergeable \
+    local_prs=$(gh pr list --state open --json number,title,mergeable \
       -q '[.[] | select(.title | test("^factory\\(.*\\): sprint")) | select(.mergeable == "MERGEABLE")] | .[].number' 2>/dev/null)
     for pr_num in $local_prs; do
       log "Auto-merging factory PR #$pr_num before new sprint..."
