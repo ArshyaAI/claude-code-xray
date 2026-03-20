@@ -92,11 +92,13 @@ slug_is_selected() {
 DATE_TAG="$(date +%b%d | tr '[:upper:]' '[:lower:]')"   # e.g. mar19
 DATE_ISO="$(date +%Y%m%d)"                               # e.g. 20260319
 DATE_FULL="$(date -u +%Y-%m-%dT%H:%M:%SZ)"              # ISO 8601 UTC
+RUN_TS="$(date +%H%M%S)"                                # HHmmss for session uniqueness
 
 # ── Build dispatch list ───────────────────────────────────────────────────────
 # Collect repos that: (a) are in the filter, (b) have a PROGRAM.md
 
 declare -a DISPATCH_LIST  # each entry: "slug|path"
+declare -A HAS_PROGRAM_MAP  # per-repo HAS_PROGRAM flag
 
 for entry in "${FACTORY_REPOS[@]}"; do
   slug="${entry%%|*}"
@@ -110,9 +112,9 @@ for entry in "${FACTORY_REPOS[@]}"; do
 
   # PROGRAM.md is optional in v3 — agents read the vault directly.
   # If it exists, it's copied as input hints. If not, agent plans from vault.
-  HAS_PROGRAM=false
+  HAS_PROGRAM_MAP["$slug"]=false
   if [[ -f "$program_file" ]]; then
-    HAS_PROGRAM=true
+    HAS_PROGRAM_MAP["$slug"]=true
   fi
 
   # Verify repo path exists
@@ -144,7 +146,7 @@ if [[ "$DRY_RUN" == true ]]; then
     echo "  Worktree:  ${repo_path}/${worktree}"
     echo "  Program:   $([ -f "$FACTORY_PROGRAMS/${slug}.md" ] && echo "$FACTORY_PROGRAMS/${slug}.md" || echo "(vault-driven — no PROGRAM.md)")"
     echo "  Log:       ${repo_path}/${worktree}/factory.log"
-    echo "  Session:   $FACTORY_RUNS/${slug}-${DATE_ISO}.json"
+    echo "  Session:   $FACTORY_RUNS/${slug}-${DATE_ISO}-${RUN_TS}.json"
     echo "  Model:     $AGENT_MODEL"
     echo "  Delay:     ${SPAWN_DELAY_SECONDS}s between spawns"
     echo ""
@@ -1022,7 +1024,7 @@ for entry in "${DISPATCH_LIST[@]}"; do
   worktree_name="factory-${DATE_ISO}"
   worktree_path="${repo_path}/.trees/${worktree_name}"
   program_src="$FACTORY_PROGRAMS/${slug}.md"
-  session_file="$FACTORY_RUNS/${slug}-${DATE_ISO}.json"
+  session_file="$FACTORY_RUNS/${slug}-${DATE_ISO}-${RUN_TS}.json"
 
   log "── $slug ──────────────────────────────────────────"
   log "Repo:     $repo_path"
@@ -1031,8 +1033,8 @@ for entry in "${DISPATCH_LIST[@]}"; do
 
   # ── Step 0: Merge pending factory PRs (prevents duplicate work) ──────────
   (cd "$repo_path" && {
-    local_prs=$(gh pr list --state open --json number,title,mergeable \
-      -q '[.[] | select(.title | startswith("factory")) | select(.mergeable == "MERGEABLE")] | .[].number' 2>/dev/null)
+    local_prs=$(gh pr list --state open --label factory-dispatch --json number,title,mergeable \
+      -q '[.[] | select(.title | test("^factory\\(.*\\): sprint")) | select(.mergeable == "MERGEABLE")] | .[].number' 2>/dev/null)
     for pr_num in $local_prs; do
       log "Auto-merging factory PR #$pr_num before new sprint..."
       gh pr merge "$pr_num" --squash --body "Factory auto-merge before next sprint" 2>/dev/null \
@@ -1048,22 +1050,23 @@ for entry in "${DISPATCH_LIST[@]}"; do
     continue
   }
 
-  # ── Step 2: Create branch if it doesn't exist ────────────────────────────
+  # ── Step 2: Create or reset branch to fresh baseline ─────────────────────
   (cd "$repo_path" && {
+    # Determine the upstream base
+    local base_ref="HEAD"
+    if git show-ref --verify --quiet "refs/remotes/origin/main"; then
+      base_ref="origin/main"
+    elif git show-ref --verify --quiet "refs/remotes/origin/master"; then
+      base_ref="origin/master"
+    fi
+
     if git show-ref --verify --quiet "refs/heads/${branch}"; then
-      log "Branch $branch already exists."
+      # Branch exists — reset it to fresh upstream so we don't carry stale commits
+      git branch -f "$branch" "$base_ref"
+      log "Reset existing branch $branch to $base_ref."
     else
-      # Create the branch from origin/main if available, else from HEAD
-      if git show-ref --verify --quiet "refs/remotes/origin/main"; then
-        git branch "$branch" "origin/main"
-        log "Created branch $branch from origin/main."
-      elif git show-ref --verify --quiet "refs/remotes/origin/master"; then
-        git branch "$branch" "origin/master"
-        log "Created branch $branch from origin/master."
-      else
-        git branch "$branch" HEAD
-        log "Created branch $branch from HEAD."
-      fi
+      git branch "$branch" "$base_ref"
+      log "Created branch $branch from $base_ref."
     fi
   }) || {
     log_err "Failed to create branch $branch for $slug — skipping"
@@ -1090,7 +1093,7 @@ for entry in "${DISPATCH_LIST[@]}"; do
   }
 
   # ── Step 4: Copy PROGRAM.md if it exists (optional hints for the agent) ──
-  if [[ "$HAS_PROGRAM" == true ]]; then
+  if [[ "${HAS_PROGRAM_MAP[$slug]}" == true ]]; then
     cp "$program_src" "${worktree_path}/PROGRAM.md"
     log "Copied PROGRAM.md to worktree (agent will use as input hints)."
   else
