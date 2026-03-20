@@ -1,0 +1,181 @@
+# policy.yml — DeFactory Evolution Engine Contract
+# Version: 1.0 | Date: 2026-03-20 | Status: FROZEN
+#
+# This file defines the immutable governance contract for the evolution engine.
+# Changes to this file require board approval and a signed promotion record in evo.db.
+# Agents MUST NOT modify this file. It is enforced read-only by the system.
+
+version: "1.0"
+frozen_at: "2026-03-20T00:00:00Z"
+sha256_self: "decf47e0fd65b15defb8b8a3bfcc23456bba69a16d873cbd10393ff6d778fb36"
+
+# ─── Immutable Genes ──────────────────────────────────────────────────────────
+# These genes MUST NEVER appear in a mutation operator's target set.
+# Any genotype diff touching these keys is automatically rejected.
+immutable_genes:
+  - "permissions.max_commits_per_sprint"
+  - "tool_policy.reviewer_tools"
+  - "evaluator_code" # all files under evo/evaluator/
+  - "promotion_thresholds" # all thresholds defined below
+  - "safety_gates" # all hard gates defined below
+
+# ─── Safety Gates (Hard Gates — all must pass, binary) ────────────────────────
+safety_gates:
+  G_build:
+    check: "npm run build OR tsc --noEmit passes"
+    tool: "CI"
+    required: true
+  G_test:
+    check: "npm test OR pytest passes"
+    tool: "CI"
+    required: true
+  G_lint:
+    check: "Lint + format passes"
+    tool: "CI"
+    required: true
+  G_review:
+    check: "Cross-model review score >= min_review_score"
+    tool: "Codex + Claude"
+    required: true
+  G_safe:
+    check: "Zero critical security findings"
+    tool: "SAST scanner"
+    required: true
+
+# ─── Promotion Thresholds (Immutable) ─────────────────────────────────────────
+promotion_thresholds:
+  stage1_frontier:
+    test: "one-sided sign test"
+    p_threshold: 0.05
+    requirement: "non-inferior to champion on ALL 7 Pareto dimensions"
+  stage2_hidden_holdout:
+    test: "Welch's t-test"
+    p_threshold: 0.05
+    tasks: 12
+    requirement: "candidate mean > champion mean AND p < 0.05"
+  stage3_live_shadow:
+    test: "Welch's t-test on real tasks"
+    p_threshold: 0.05
+    tasks: 12
+    high_risk_min_tasks: 24 # for model_routing or prompt_policy mutations
+  stage4_canary:
+    traffic_pct: 10
+    min_hours: 24
+    max_hours: 72
+    utility_confidence: 0.95
+    guardrail_confidence: 0.95
+    min_human_approval: 0.80
+
+# ─── Rollback Triggers (any one = immediate rollback) ─────────────────────────
+rollback_triggers:
+  - "any critical security finding"
+  - "build/test failure rate > 2x champion baseline"
+  - "cost per item > 3x champion baseline"
+  - "human approval rate drops below 0.60"
+  - "confidence sequence crosses harm boundary"
+
+# ─── Evaluator Weights (set by leadership, never learned by agents) ───────────
+# These are the Layer 1 tie-break utility weights.
+# Changing these requires board approval. They are NOT mutable genes.
+evaluator_weights:
+  C: 0.15 # Code Quality
+  R: 0.20 # Test Reliability
+  H: 0.15 # Human Approval
+  Q: 0.10 # Convention Adherence
+  T: 0.15 # Throughput
+  K: 0.15 # Cost Efficiency
+  S: 0.10 # Safety
+
+# ─── Layer 1 Scoring Parameters (immutable baselines) ─────────────────────────
+layer1_params:
+  code_quality:
+    alpha_L: 0.10 # lint violation weight
+    alpha_M: 0.05 # cyclomatic complexity weight
+    alpha_D: 2.0 # documentation coverage sigmoid slope
+    tau_D: 0.5 # documentation coverage midpoint
+  test_reliability:
+    w_cov: 0.50 # diff-hunk coverage weight
+    w_mut: 0.30 # mutation score weight
+    w_hid: 0.20 # hidden holdout pass rate weight
+  human_approval:
+    alpha0: 1.0 # Beta prior alpha
+    beta0: 1.0 # Beta prior beta
+    tau_H: 0.70 # threshold for positive signal
+  convention_adherence:
+    lambda: 1.0 # violation penalty rate
+
+# ─── Mutation Operators and Weights ───────────────────────────────────────────
+# One operator is applied per generation. Weights are normalized.
+mutation_operators:
+  swap_model:
+    weight: 0.25
+    description: "Change model for one agent role"
+    targets: ["model_routing.*"]
+    high_risk: true # triggers stage3 24-task min
+  tweak_cadence:
+    weight: 0.20
+    description: "Adjust one interval by +/- 25%"
+    targets: ["cadence.*"]
+    high_risk: false
+  swap_prompt:
+    weight: 0.20
+    description: "Replace one agent's system prompt variant"
+    targets: ["prompt_policy.*"]
+    high_risk: true # triggers stage3 24-task min
+  adjust_threshold:
+    weight: 0.15
+    description: "Change one numeric threshold within bounds"
+    targets: ["review_strategy.min_review_score", "memory_retrieval.*"]
+    high_risk: false
+  toggle_policy:
+    weight: 0.10
+    description: "Flip one boolean policy flag"
+    targets:
+      [
+        "review_strategy.require_cross_model",
+        "permissions.auto_merge_safe",
+        "memory_retrieval.cross_repo_inheritance",
+      ]
+    high_risk: false
+  adjust_budget:
+    weight: 0.10
+    description: "Change one cost cap within bounds"
+    targets: ["budget.*"]
+    high_risk: false
+
+# ─── Mutation Bounds ──────────────────────────────────────────────────────────
+mutation_bounds:
+  cadence:
+    explorer_batch_interval_min: [30, 180]
+    evaluator_interval_min: [30, 120]
+    memory_curator_interval_min: [60, 360]
+    audit_interval_min: [120, 480]
+  permissions:
+    max_files_per_task: [1, 10]
+    # max_commits_per_sprint: IMMUTABLE — not listed here
+  memory_retrieval:
+    max_conventions_in_context: [5, 50]
+    memory_decay_days: [7, 90]
+  review_strategy:
+    min_review_score: [60, 100]
+  budget:
+    max_cost_per_task_usd: [0.50, 5.00]
+    max_cost_per_round_usd: [5.00, 50.00]
+
+# ─── Forbidden Mutations ──────────────────────────────────────────────────────
+# The mutation engine must reject any diff that touches these paths.
+forbidden_mutation_targets:
+  - "permissions.max_commits_per_sprint"
+  - "tool_policy.reviewer_tools"
+  - "evaluator_weights"
+  - "layer1_params"
+  - "promotion_thresholds"
+  - "rollback_triggers"
+  - "safety_gates"
+  - "mutation_operators.*.weight" # weights are governance, not search params
+
+# ─── File Integrity (enforced read-only from agents) ──────────────────────────
+read_only_paths:
+  - "continuous-factory/config/policy.yml"
+  - "continuous-factory/evo/evaluator/"
+  - "continuous-factory/evo/schema.sql"
