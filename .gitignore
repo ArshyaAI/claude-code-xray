@@ -1,0 +1,27 @@
+# Secrets
+auth.json
+*.secret
+mcp-oauth.json
+
+# Runtime data
+runs/
+artifacts/
+temp/
+sessions/
+logs/
+memory/
+manifests/
+metrics/
+queue/
+programs/
+retros/
+heartbeat.log
+history.json
+background-processes.json
+settings.json
+
+# Binary
+bin/rg
+
+# OS
+.DS_Store

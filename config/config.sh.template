@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Continuous Factory — Configuration Template
+# Copy to ~/.factory/config.sh and fill in your values.
+# Source this in all factory scripts: source ~/.factory/config.sh
+
+# ── Factory Home ─────────────────────────────────────────────
+FACTORY_HOME="${FACTORY_HOME:-$HOME/.factory}"
+
+# ── Repo Registry ────────────────────────────────────────────
+# Format: "slug|path"
+# Add your repos here:
+FACTORY_REPOS=(
+  # "myapp|/path/to/myapp"
+  # "backend|/path/to/backend"
+  # "frontend|/path/to/frontend"
+)
+
+# ── Vault ────────────────────────────────────────────────────
+VAULT_PATH="${FACTORY_VAULT_PATH:-}"
+
+# ── Telegram ─────────────────────────────────────────────────
+TELEGRAM_BOT_TOKEN="${FACTORY_TELEGRAM_TOKEN:-}"
+TELEGRAM_CHAT_ID="${FACTORY_TELEGRAM_CHAT:-}"
+
+# ── Agent Config ─────────────────────────────────────────────
+MAX_CONCURRENT_AGENTS=5
+AGENT_MODEL="claude-sonnet-4-6"
+SPAWN_DELAY_SECONDS=30
+
+# ── Budget ───────────────────────────────────────────────────
+FACTORY_BUDGET_OVERNIGHT_USD="${FACTORY_BUDGET_OVERNIGHT_USD:-50}"
+
+# ── Quality Gates (gstack sprint integration) ────────────────
+QA_INTERVAL=5        # /qa-only every N items
+REVIEW_INTERVAL=10   # /review every N items
+HEARTBEAT_INTERVAL_MIN=15
+
+# ── Branch Discipline ────────────────────────────────────────
+FACTORY_BRANCH_PREFIX="factory"
+
+# ── Tool Paths (for headless agent sessions) ─────────────────
+# These paths are added to PATH in factory-dispatch.sh so agents can find tools
+FACTORY_EXTRA_PATH="${FACTORY_EXTRA_PATH:-}"
+
+# ── Paths ────────────────────────────────────────────────────
+FACTORY_BIN="$FACTORY_HOME/bin"
+FACTORY_PROGRAMS="$FACTORY_HOME/programs"
+FACTORY_RUNS="$FACTORY_HOME/runs"
+FACTORY_MANIFESTS="$FACTORY_HOME/manifests"
+FACTORY_MEMORY="$FACTORY_HOME/memory"
+FACTORY_RETROS="$FACTORY_HOME/retros"
