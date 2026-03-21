@@ -1,0 +1,214 @@
+# models.yaml — DeFactory Model Catalog
+# Source: model-catalog-2026-03.md (vault)
+# Updated: 2026-03-21
+# Status: FROZEN (changes require board approval)
+#
+# All models available for agent routing. Explorers may swap_model
+# among these entries (mutable roles only — see policy.yml).
+
+version: "2026-03"
+
+providers:
+  anthropic:
+    models:
+      - id: "claude-opus-4-6"
+        tier: flagship
+        context_window: 1000000
+        max_output: 128000
+        cost_per_mtok_in: 5.00
+        cost_per_mtok_out: 25.00
+        strength: "Best reasoning, agents, 128k output"
+        effort_levels: ["low", "medium", "high", "max"]
+        adapter: claude_local
+
+      - id: "claude-sonnet-4-6"
+        tier: mid
+        context_window: 1000000
+        max_output: 64000
+        cost_per_mtok_in: 3.00
+        cost_per_mtok_out: 15.00
+        strength: "Speed/intelligence balance"
+        effort_levels: ["low", "medium", "high"]
+        adapter: claude_local
+
+      - id: "claude-haiku-4-5"
+        tier: fast
+        context_window: 200000
+        max_output: 8192
+        cost_per_mtok_in: 1.00
+        cost_per_mtok_out: 5.00
+        strength: "Fastest near-frontier"
+        effort_levels: ["low", "medium", "high"]
+        adapter: claude_local
+
+  openai:
+    models:
+      - id: "gpt-5.4"
+        tier: flagship
+        context_window: 1000000
+        cost_per_mtok_in: 2.50
+        cost_per_mtok_out: 15.00
+        strength: "Latest frontier, tool use"
+        reasoning_levels: ["minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+      - id: "gpt-5.4-pro"
+        tier: ultra
+        context_window: 1000000
+        cost_per_mtok_in: 30.00
+        cost_per_mtok_out: 180.00
+        strength: "Maximum quality"
+        reasoning_levels: ["minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+      - id: "gpt-5.4-mini"
+        tier: mid
+        context_window: 400000
+        cost_per_mtok_in: 0.75
+        cost_per_mtok_out: 4.50
+        strength: "Fast coding, subagents"
+        reasoning_levels: ["minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+      - id: "gpt-5.4-nano"
+        tier: mini
+        context_window: 400000
+        cost_per_mtok_in: 0.20
+        cost_per_mtok_out: 1.25
+        strength: "Cheapest GPT-5 family"
+        reasoning_levels: ["minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+      - id: "gpt-5.3-codex"
+        tier: code
+        context_window: 200000
+        cost_per_mtok_in: 2.00
+        cost_per_mtok_out: 10.00
+        strength: "Agentic coding, Codex CLI"
+        reasoning_levels: ["minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+      - id: "gpt-5.3-codex-spark"
+        tier: code_fast
+        context_window: null # Pro subscription only
+        cost_per_mtok_in: null # Pro subscription
+        cost_per_mtok_out: null
+        strength: "Near-instant coding (Pro only)"
+        reasoning_levels: ["minimal", "low", "medium", "high"]
+        adapter: codex_local
+
+      - id: "gpt-5.2"
+        tier: previous
+        context_window: 400000
+        cost_per_mtok_in: 1.75
+        cost_per_mtok_out: 14.00
+        strength: "Strong reasoning"
+        reasoning_levels: ["minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+    o_series:
+      - id: "o3"
+        tier: reasoning
+        context_window: 200000
+        cost_per_mtok_in: 2.00
+        cost_per_mtok_out: 8.00
+        strength: "Deep multi-step reasoning"
+        reasoning_levels: ["none", "minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+      - id: "o4-mini"
+        tier: reasoning_fast
+        context_window: 200000
+        cost_per_mtok_in: 1.10
+        cost_per_mtok_out: 4.40
+        strength: "Best-value reasoning"
+        reasoning_levels: ["none", "minimal", "low", "medium", "high", "xhigh"]
+        adapter: codex_local
+
+  google:
+    models:
+      - id: "gemini-3.1-pro-preview"
+        tier: flagship
+        context_window: 1000000
+        cost_per_mtok_in: 2.00
+        cost_per_mtok_out: 12.00
+        strength: "Deep reasoning, agentic coding"
+        thinking_levels: ["minimal", "low", "medium", "high"]
+        adapter: gemini_local
+
+      - id: "gemini-3-flash-preview"
+        tier: mid
+        context_window: 1000000
+        cost_per_mtok_in: 0.50
+        cost_per_mtok_out: 3.00
+        strength: "Frontier at fraction of cost"
+        thinking_levels: ["minimal", "low", "medium", "high"]
+        adapter: gemini_local
+
+      - id: "gemini-3.1-flash-lite-preview"
+        tier: budget
+        context_window: 1000000
+        cost_per_mtok_in: 0.25
+        cost_per_mtok_out: 1.50
+        strength: "Most cost-effective"
+        thinking_levels: ["minimal", "low", "medium", "high"]
+        adapter: gemini_local
+
+# ─── Adapter Config ──────────────────────────────────────────────────────────
+
+adapters:
+  claude_local:
+    effort_key: "effort"
+    values: ["low", "medium", "high", "max"]
+    permission_flag: "dangerouslySkipPermissions"
+
+  codex_local:
+    effort_key: "modelReasoningEffort"
+    values: ["minimal", "low", "medium", "high", "xhigh"]
+    permission_flag: "dangerouslyBypassApprovalsAndSandbox"
+
+  gemini_local:
+    effort_key: "thinking_level"
+    values: ["minimal", "low", "medium", "high"]
+
+# ─── Routing Recommendations ────────────────────────────────────────────────
+
+routing_guidance:
+  judgment_roles:
+    models: ["claude-opus-4-6"]
+    effort: "max"
+    roles: ["ceo", "auditor", "strategist"]
+    note: "Irreversible decisions require deepest reasoning"
+
+  strong_judgment:
+    models: ["claude-opus-4-6"]
+    effort: "high"
+    roles: ["cto", "memory_curator"]
+    note: "Important reasoning but not existential"
+
+  execution_roles:
+    models: ["claude-sonnet-4-6"]
+    roles: ["builder", "qa", "evaluator"]
+    note: "Speed matters, quality gated by review"
+
+  cross_model:
+    models: ["gpt-5.3-codex", "gpt-5.4"]
+    roles: ["reviewer", "analyst", "critic"]
+    note: "Prevents groupthink from all-Claude roster"
+
+  budget_parallel:
+    models: ["gpt-5.4-mini", "claude-haiku-4-5", "gpt-5.4-nano"]
+    roles: ["explorer"]
+    note: "Experiments are throwaway — use cheapest viable"
+
+# ─── Budget Context ─────────────────────────────────────────────────────────
+
+budget:
+  total_monthly_usd: 400
+  sources:
+    - "Claude Max 20x subscription"
+    - "ChatGPT Pro subscription"
+  allocation:
+    champion_lane: 0.60 # agents 1-4, 7-8
+    evolution_lane: 0.16 # agents 5-6, 9, 12
+    governance: 0.24 # agents 10-11, B1-B3
