@@ -1,0 +1,197 @@
+# roster.yaml — DeFactory Agent Roster
+# Source: BIBLE.md Agent Roster section
+# Updated: 2026-03-21
+# Status: Canonical (matches BIBLE.md v1.0)
+#
+# 12 agents + 3 board advisors. Model routing matches
+# config/models.yaml and genotype seed (gen-0000).
+
+version: "1.0"
+
+# ─── Core Agents (12) ────────────────────────────────────────────────────────
+
+agents:
+  - id: 1
+    name: CEO
+    adapter: claude_local
+    model: claude-opus-4-6
+    effort: max
+    heartbeat: "2 hours"
+    budget_pct: 15
+    role: "Strategy, hiring, unblocking, P&L"
+    immutable: true
+    why: "Deepest reasoning for strategic decisions"
+
+  - id: 2
+    name: CTO
+    adapter: claude_local
+    model: claude-opus-4-6
+    effort: high
+    heartbeat: "2 hours"
+    budget_pct: 10
+    role: "Architecture judgment, tech debt"
+    immutable: true
+    why: "Architecture needs depth, not max"
+
+  - id: 3
+    name: Builder-1
+    adapter: claude_local
+    model: claude-sonnet-4-6
+    heartbeat: on-demand
+    budget_pct: 12
+    role: "Code implementation (champion lane)"
+    immutable: false
+    why: "Speed + quality balance for shipping code"
+
+  - id: 4
+    name: Builder-2
+    adapter: claude_local
+    model: claude-sonnet-4-6
+    heartbeat: on-demand
+    budget_pct: 12
+    role: "Code implementation (champion lane)"
+    immutable: false
+    why: "Same as Builder-1, parallel capacity"
+
+  - id: 5
+    name: Explorer-1
+    adapter: claude_local
+    model: claude-sonnet-4-6
+    heartbeat: hourly
+    budget_pct: 5
+    role: "Mutation experiments (explorer pool)"
+    immutable: false
+    why: "Fast + cheap for throwaway experiments"
+
+  - id: 6
+    name: Explorer-2
+    adapter: codex_local
+    model: gpt-5.4-mini
+    reasoning: medium
+    heartbeat: hourly
+    budget_pct: 3
+    role: "Mutation experiments (explorer pool)"
+    immutable: false
+    why: "Cross-model diversity in experiments, cheapest"
+
+  - id: 7
+    name: Reviewer
+    adapter: codex_local
+    model: gpt-5.3-codex
+    reasoning: xhigh
+    heartbeat: on-demand
+    budget_pct: 5
+    role: "Cross-model adversarial review"
+    immutable: false
+    why: "Cross-model catches Claude blind spots, deep review"
+
+  - id: 8
+    name: QA
+    adapter: claude_local
+    model: claude-sonnet-4-6
+    heartbeat: on-demand
+    budget_pct: 5
+    role: "Real tests, integration verification"
+    immutable: false
+    why: "Speed for test execution, tool use"
+
+  - id: 9
+    name: Evaluator
+    adapter: claude_local
+    model: claude-sonnet-4-6
+    heartbeat: hourly
+    budget_pct: 5
+    role: "Score computation, promotion decisions"
+    immutable: false
+    why: "Execution (not judgment), needs speed"
+
+  - id: 10
+    name: Memory Curator
+    adapter: claude_local
+    model: claude-opus-4-6
+    effort: high
+    heartbeat: per-round
+    budget_pct: 5
+    role: "Convention extraction, promotion, decay"
+    immutable: true
+    why: "Convention judgment requires strong reasoning"
+
+  - id: 11
+    name: Objective Auditor
+    adapter: claude_local
+    model: claude-opus-4-6
+    effort: max
+    heartbeat: "4 hours"
+    budget_pct: 10
+    role: "External-reality grounding, frame audit"
+    immutable: true
+    why: "Existential questions need deepest reasoning"
+
+  - id: 12
+    name: Research Scientist
+    adapter: codex_local
+    model: gpt-5.4
+    reasoning: high
+    heartbeat: daily
+    budget_pct: 3
+    role: "Benchmark curation, archive maintenance"
+    immutable: false
+    why: "Cross-model perspective on metrics, strong reasoning"
+
+# ─── Board Advisors (3, on-demand, no heartbeat) ─────────────────────────────
+
+board:
+  - id: B1
+    name: Analyst
+    adapter: codex_local
+    model: gpt-5.4
+    reasoning: xhigh
+    role: "Quantitative analysis, ROI, cost trends"
+    why: "Best at quantitative analysis, cross-model"
+
+  - id: B2
+    name: Critic
+    adapter: codex_local
+    model: gpt-5.3-codex
+    reasoning: xhigh
+    role: "Red-teams everything, finds flaws"
+    why: "Adversarial by design, catches Claude blind spots"
+
+  - id: B3
+    name: Strategist
+    adapter: claude_local
+    model: claude-opus-4-6
+    effort: max
+    role: "Long-term thinking, paradigm shifts"
+    why: "Deepest abstract reasoning"
+
+# ─── Routing Principles ──────────────────────────────────────────────────────
+
+routing_rules:
+  - "Judgment -> Opus max: CEO, Objective Auditor, Strategist"
+  - "Judgment -> Opus high: CTO, Memory Curator"
+  - "Execution -> Sonnet: Builders, QA, Evaluator"
+  - "Cross-model -> Codex/GPT: Reviewer, Explorer-2, Analyst, Critic, Research Scientist"
+  - "Speed -> Spark/Mini: rapid code iteration loops"
+  - "Budget -> cheapest viable: Explorer-2 on gpt-5.4-mini"
+  - "NEVER route judgment roles to fast models"
+  - "NEVER route execution roles to expensive models"
+
+# ─── Lane Allocation ─────────────────────────────────────────────────────────
+
+lanes:
+  champion:
+    agents: [1, 2, 3, 4, 7, 8]
+    budget_pct: 60
+    description: "Production work"
+
+  evolution:
+    agents: [5, 6, 9, 12]
+    budget_pct: 16
+    description: "Experiments (lean)"
+
+  governance:
+    agents: [10, 11]
+    board: [B1, B2, B3]
+    budget_pct: 24
+    description: "Memory + audit + board"
