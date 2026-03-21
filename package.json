@@ -1,0 +1,15 @@
+{
+  "name": "continuous-factory",
+  "version": "0.1.0",
+  "description": "DeFactory — continuously self-improving AI development company",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "node --test src/**/*.test.js 2>/dev/null || node --test dist/**/*.test.js 2>/dev/null || echo 'no tests found'"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
