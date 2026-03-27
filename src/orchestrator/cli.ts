@@ -12,6 +12,7 @@ import {
   type CrewResult,
 } from "./shadow.js";
 import type { ParetoDimensions } from "../evaluator/score.js";
+import { printLineage } from "./lineage.js";
 
 // ─── Argument parsing ────────────────────────────────────────────────────────
 
@@ -258,6 +259,12 @@ async function main(): Promise<void> {
         }
       }
 
+      process.exit(0);
+      break;
+    }
+
+    case "lineage": {
+      printLineage();
       process.exit(0);
       break;
     }
