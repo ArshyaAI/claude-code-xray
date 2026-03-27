@@ -218,6 +218,7 @@ export function runShadowLeague(
     task_timeout_sec: 1800, // 30 min per task
     budget_cap_usd: budgetCap,
     keep_worktrees: opts.keepWorktrees,
+    archetype: config.archetype,
   };
 
   // Run all crews on all tasks

@@ -12,11 +12,13 @@ import { writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Task } from "./tasks.js";
 import type { Genotype } from "../genotype/schema.js";
+import type { Archetype } from "./config.js";
 import type { EvalMetrics } from "../evaluator/score.js";
 import {
   defaultMetrics,
   budgetMetricsFromGenotype,
 } from "../evaluator/score.js";
+import { getArchetypeDefaults } from "./archetypes.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -65,6 +67,8 @@ export interface DispatchOptions {
   budget_cap_usd: number;
   /** Whether to keep worktrees after completion (for debugging). */
   keep_worktrees: boolean;
+  /** Repo archetype for score normalization. */
+  archetype: Archetype;
 }
 
 // ─── Shell helpers ───────────────────────────────────────────────────────────
@@ -191,6 +195,7 @@ export function runTaskWithCrew(
   const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
   const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
+  const archetypeDefaults = getArchetypeDefaults(options.archetype);
   const metrics = defaultMetrics({
     lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
     items_completed: agentSuccess && ciResults.build_passed ? 1 : 0,
@@ -200,7 +205,7 @@ export function runTaskWithCrew(
     guardrails_passed: criticalFindings === 0,
     convention_violations: 0,
     kloc: 1.0,
-    throughput_max: 10.0,
+    throughput_max: archetypeDefaults.throughput_max,
   });
 
   return {
