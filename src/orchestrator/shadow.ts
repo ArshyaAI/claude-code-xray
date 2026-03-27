@@ -251,6 +251,7 @@ export async function runShadowLeague(
     budget_cap_usd: budgetCap,
     keep_worktrees: opts.keepWorktrees,
     archetype: config.archetype,
+    active_roles: config.active_roles,
   };
 
   // Run all crews on all tasks

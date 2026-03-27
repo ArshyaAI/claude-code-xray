@@ -92,6 +92,7 @@ function makeDispatchOpts(repoDir: string): DispatchOptions {
     budget_cap_usd: 100,
     keep_worktrees: false,
     archetype: "ts-lib",
+    active_roles: ["builder", "reviewer", "qa"],
   };
 }
 

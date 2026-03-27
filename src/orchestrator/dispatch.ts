@@ -30,6 +30,8 @@ import { collectMutationScore } from "./mutation-testing.js";
 import { collectDiffHunkCoverage } from "./coverage.js";
 import { collectConventionViolations } from "./conventions.js";
 import { collectDocCoverage } from "./doc-coverage.js";
+import { runCrewPipeline, type PipelineOptions } from "./crew-pipeline.js";
+import type { ActiveRole } from "./config.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -80,6 +82,8 @@ export interface DispatchOptions {
   keep_worktrees: boolean;
   /** Repo archetype for score normalization. */
   archetype: Archetype;
+  /** Which agent roles to activate per task (default: builder, reviewer, qa). */
+  active_roles: ActiveRole[];
 }
 
 // ─── Shell helpers ───────────────────────────────────────────────────────────
@@ -150,12 +154,11 @@ export function removeWorktree(repoRoot: string, worktreePath: string): void {
 // ─── Agent spawning ──────────────────────────────────────────────────────────
 
 /**
- * Run a single task with a single crew configuration.
+ * Run a single task with a crew configuration using the multi-agent pipeline.
  *
- * 1. Writes NIGHT-TASK.md into the worktree
- * 2. Spawns `claude --prompt-file NIGHT-TASK.md`
- * 3. Measures wall-clock time
- * 4. Collects metrics from the worktree
+ * Pipeline: builder → reviewer → QA (per design doc active_roles)
+ * Each role uses the genotype's model routing and prompt policy.
+ * Falls back to builder-only if reviewer/QA not in active_roles.
  */
 export function runTaskWithCrew(
   task: Task,
@@ -164,52 +167,26 @@ export function runTaskWithCrew(
   options: DispatchOptions,
 ): AttemptResult {
   const taskContent = formatTaskContent(task);
-  const nightTaskPath = join(worktreePath, "NIGHT-TASK.md");
-  writeFileSync(nightTaskPath, taskContent, "utf-8");
 
-  const startTime = Date.now();
-  let agentSuccess = false;
-  let agentOutput = "";
+  // Run the multi-agent crew pipeline
+  const pipelineOpts: PipelineOptions = {
+    worktreePath,
+    timeout_sec: options.task_timeout_sec,
+    activeRoles: options.active_roles,
+  };
 
-  try {
-    // Spawn Claude Code agent with --prompt-file (safe from shell injection)
-    const timeoutMs = options.task_timeout_sec * 1000;
-    const result = execSync(
-      `cat NIGHT-TASK.md | claude -p --dangerously-skip-permissions --output-format json 2>/dev/null`,
-      {
-        cwd: worktreePath,
-        timeout: timeoutMs,
-        stdio: ["pipe", "pipe", "pipe"],
-        encoding: "utf-8" as BufferEncoding,
-        env: { ...process.env },
-      },
-    );
-    agentOutput = typeof result === "string" ? result : "";
-    agentSuccess = true;
-  } catch (e: unknown) {
-    const err = e as {
-      killed?: boolean;
-      code?: string | number;
-      stdout?: string;
-    };
-    agentOutput = err.stdout ?? "";
-    // timeout kills the process — err.killed will be true
-    if (err.killed) {
-      // Timeout — agent took too long
-      agentSuccess = false;
-    } else if (err.code === 0 || err.code === "0") {
-      agentSuccess = true;
-    }
-    // Other errors: agent failed
-  }
+  const pipeline = runCrewPipeline(taskContent, crew.genotype, pipelineOpts);
 
-  const durationSec = Math.round((Date.now() - startTime) / 1000);
+  const agentSuccess = pipeline.builder.success;
+  const agentOutput = pipeline.builder.output;
+  const durationSec = pipeline.total_duration_sec;
 
-  // Collect metrics from the worktree
+  // Collect metrics from the worktree (after all agents ran)
   const ciResults = collectCiResults(worktreePath);
-  const reviewScore = collectReviewScore(worktreePath, agentOutput);
+  const reviewScore =
+    pipeline.review_score ?? collectReviewScore(worktreePath, agentOutput);
   const criticalFindings = collectSecurityFindings(worktreePath);
-  const costUsd = parseCostFromOutput(agentOutput, durationSec);
+  const costUsd = pipeline.total_cost_usd;
 
   const mutationScore = collectMutationScore(worktreePath);
   const complexity = collectComplexity(worktreePath);
