@@ -55,17 +55,39 @@ export interface PipelineOptions {
 // ─── Model CLI flag mapping ──────────────────────────────────────────────────
 
 /**
- * Convert a genotype ModelRoute to claude CLI flags.
- * Claude CLI uses --model for model selection.
+ * Map genotype ToolName to Claude CLI tool names.
  */
-function buildClaudeFlags(route: ModelRoute): string[] {
+const TOOL_NAME_MAP: Record<string, string> = {
+  read: "Read",
+  edit: "Edit",
+  bash: "Bash",
+  glob: "Glob",
+  grep: "Grep",
+  write: "Write",
+};
+
+/**
+ * Convert a genotype ModelRoute + tool policy to claude CLI flags.
+ * Claude CLI uses --model for model selection and --allowedTools for restriction.
+ */
+function buildClaudeFlags(
+  route: ModelRoute,
+  tools?: readonly string[],
+): string[] {
   const flags: string[] = [];
 
-  // Only Claude models work with claude CLI
+  // Model routing: only Claude models work with claude CLI
   if (isClaudeModel(route.model)) {
     flags.push("--model", route.model);
   }
-  // Codex/Gemini models can't be used with claude CLI — fall back to default
+
+  // Tool policy enforcement
+  if (tools && tools.length > 0) {
+    const cliTools = tools.map((t) => TOOL_NAME_MAP[t] ?? t).filter(Boolean);
+    if (cliTools.length > 0) {
+      flags.push("--allowedTools", cliTools.join(","));
+    }
+  }
 
   return flags;
 }
@@ -170,9 +192,11 @@ export function runCrewPipeline(
 
     const builderRoute = genotype.model_routing.builder;
     const builderPrompt = buildSystemPrompt("builder", genotype);
+    const builderTools = [...genotype.tool_policy.builder_tools] as string[];
     results.builder = runRole(
       "builder",
       builderRoute,
+      builderTools,
       builderPrompt,
       worktreePath,
       timeout_sec,
@@ -183,9 +207,12 @@ export function runCrewPipeline(
   if (activeRoles.includes("reviewer") && results.builder.success) {
     const reviewerRoute = genotype.model_routing.reviewer;
     const reviewerPrompt = buildSystemPrompt("reviewer", genotype);
+    // Reviewer uses read-only tools (enforced by genotype.tool_policy.reviewer_tools)
+    const reviewerTools = [...genotype.tool_policy.reviewer_tools] as string[];
     results.reviewer = runRole(
       "reviewer",
       reviewerRoute,
+      reviewerTools,
       reviewerPrompt,
       worktreePath,
       timeout_sec,
@@ -199,7 +226,9 @@ export function runCrewPipeline(
   if (activeRoles.includes("qa") && results.builder.success) {
     const qaRoute = genotype.model_routing.qa;
     const qaPrompt = buildSystemPrompt("qa", genotype);
-    results.qa = runRole("qa", qaRoute, qaPrompt, worktreePath, timeout_sec);
+    // QA gets same tools as builder (needs bash for running tests)
+    const qaTools = [...genotype.tool_policy.builder_tools] as string[];
+    results.qa = runRole("qa", qaRoute, qaTools, qaPrompt, worktreePath, timeout_sec);
   }
 
   // Totals
@@ -218,6 +247,7 @@ export function runCrewPipeline(
 function runRole(
   role: "builder" | "reviewer" | "qa",
   route: ModelRoute,
+  tools: readonly string[] | undefined,
   systemPrompt: string,
   worktreePath: string,
   timeout_sec: number,
@@ -227,7 +257,7 @@ function runRole(
   let success = false;
 
   try {
-    const cliFlags = buildClaudeFlags(route);
+    const cliFlags = buildClaudeFlags(route, tools);
     const flagStr = cliFlags.length > 0 ? " " + cliFlags.join(" ") : "";
 
     // Write system prompt to a temp file for the agent

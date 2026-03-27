@@ -231,6 +231,9 @@ export async function runShadowLeague(
     opts.crews,
   );
 
+  // Auto-bootstrap evo.db if needed
+  bootstrapDb(repoRoot);
+
   // Load champion genotype
   const champion = loadChampion(repoRoot);
   const championGen = getGeneration(champion.id);
@@ -567,6 +570,46 @@ function getCurrentBranch(repoRoot: string): string {
     }).trim();
   } catch {
     return "HEAD";
+  }
+}
+
+/**
+ * Auto-bootstrap evo.db if it doesn't exist.
+ * Runs init-evo-db.sh and applies shadow migration.
+ */
+function bootstrapDb(repoRoot: string): void {
+  const db = getDbPath();
+  if (existsSync(db)) return;
+
+  console.log("First run detected. Bootstrapping evo.db...");
+
+  const initScript = join(repoRoot, "evo", "init-evo-db.sh");
+  if (existsSync(initScript)) {
+    try {
+      execSync(`bash "${initScript}" --db-path "${db}"`, {
+        cwd: repoRoot,
+        stdio: "inherit",
+        encoding: "utf-8",
+      });
+    } catch (e) {
+      console.error("Warning: init-evo-db.sh failed. Using in-memory seed.");
+      return;
+    }
+  }
+
+  // Apply shadow migration
+  const migration = join(repoRoot, "evo", "migrations", "002-shadow.sql");
+  if (existsSync(migration) && existsSync(db)) {
+    try {
+      execSync(`sqlite3 "${db}" < "${migration}"`, {
+        cwd: repoRoot,
+        stdio: "pipe",
+        encoding: "utf-8",
+      });
+      console.log("  Shadow migration applied.");
+    } catch {
+      console.error("Warning: shadow migration failed.");
+    }
   }
 }
 
