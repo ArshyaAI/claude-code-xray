@@ -66,6 +66,9 @@ function parseArgs(argv: string[]): {
       case "--from":
         from = argv[++i];
         break;
+      case "--task-source":
+        options.taskSource = argv[++i] ?? null;
+        break;
       default:
         console.error(`Unknown option: ${arg}`);
         process.exit(1);
@@ -262,7 +265,8 @@ async function main(): Promise<void> {
       const vcOptions: Partial<ShadowRunOptions> = {
         ...options,
         crews: 2,
-        varianceCheck: true, // Both crews use same champion genotype
+        varianceCheck: true,
+        taskSource: options.taskSource ?? "VARIANCE-TASKS.md",
       };
       console.log("Variance check mode: running champion vs champion");
       console.log(

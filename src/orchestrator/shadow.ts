@@ -66,6 +66,8 @@ export interface ShadowRunOptions {
   varianceCheck: boolean;
   /** Force per-dimension Pareto dominance test (requires N >= 20). */
   fullPareto: boolean;
+  /** Override task source file (default: from factory.yaml or PROGRAM.md). */
+  taskSource: string | null;
 }
 
 export interface ShadowRunResult {
@@ -108,6 +110,7 @@ const DEFAULT_OPTIONS: ShadowRunOptions = {
   seed: null,
   varianceCheck: false,
   fullPareto: false,
+  taskSource: null,
 };
 
 const MIN_TASKS = 8;
@@ -180,8 +183,10 @@ export async function runShadowLeague(
   }
   const config = configResult.config;
 
-  // Parse tasks — try configured source, fall back to TASKS.md
-  let taskSource = join(repoRoot, config.task_source);
+  // Parse tasks — use override, configured source, or fall back to TASKS.md
+  let taskSource = opts.taskSource
+    ? join(repoRoot, opts.taskSource)
+    : join(repoRoot, config.task_source);
   if (!existsSync(taskSource) && config.task_source === "PROGRAM.md") {
     const fallback = join(repoRoot, "TASKS.md");
     if (existsSync(fallback)) {
