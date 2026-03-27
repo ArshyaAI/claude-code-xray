@@ -31,3 +31,18 @@
   - Run mutation testing framework after agent completes
   - Parse mutation score from output
   - Replace the hardcoded 0.5 default in EvalMetrics
+- [ ] Add complexity analysis collection via madge/dependency-cruiser
+  - Parse cyclomatic complexity from output
+  - Replace the hardcoded 1.0 default in EvalMetrics
+- [ ] Add diff-hunk coverage collection via c8/istanbul
+  - Run coverage on changed files only
+  - Replace the hardcoded 0.5 default in EvalMetrics
+- [ ] Add convention violation detection from eslint/biome output
+  - Count rule violations as convention_violations metric
+  - Replace the hardcoded 0 default in EvalMetrics
+- [ ] Add doc coverage detection from typedoc/jsdoc output
+  - Measure documentation coverage on changed exports
+  - Replace the hardcoded 0.3 default in EvalMetrics
+- [ ] Wire up review score parsing from /review SCORE: line
+  - After agent runs, scan worktree for review output containing SCORE: N
+  - Pass parsed score to G_review gate instead of undefined
