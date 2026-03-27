@@ -8,6 +8,7 @@
  */
 
 import { execSync, spawn, type ExecSyncOptions } from "node:child_process";
+import * as crypto from "node:crypto";
 import {
   writeFileSync,
   readFileSync,
@@ -115,8 +116,22 @@ function shellSuccess(cmd: string, cwd?: string): boolean {
 // ─── Worktree management ─────────────────────────────────────────────────────
 
 /**
+ * Check if a path is registered as a git worktree.
+ * Uses `git worktree list` as the authoritative source.
+ */
+export function isActiveWorktree(repoRoot: string, wtPath: string): boolean {
+  const list = shell("git worktree list --porcelain", repoRoot);
+  return list.split("\n").some((line) => line === `worktree ${wtPath}`);
+}
+
+/**
  * Create an isolated git worktree for a crew.
  * Worktrees are namespaced as `factory-{run_id}-{crew_label}` to avoid conflicts.
+ *
+ * Conflict handling:
+ * - If the path already exists as a registered worktree, attempt to remove it first.
+ * - If removal fails, generate a unique suffix to avoid the conflict.
+ * - After creation, verify the worktree is valid (.git file present).
  */
 export function createWorktree(
   repoRoot: string,
@@ -124,16 +139,41 @@ export function createWorktree(
   crewLabel: string,
   baseRef: string,
 ): string {
-  const worktreeName = `factory-${runId}-${crewLabel}`;
-  const worktreePath = join(repoRoot, ".worktrees", worktreeName);
+  let worktreeName = `factory-${runId}-${crewLabel}`;
+  let worktreePath = join(repoRoot, ".worktrees", worktreeName);
 
+  // Check for existing worktree conflict
   if (existsSync(worktreePath)) {
-    // Clean up stale worktree
-    shell(`git worktree remove --force "${worktreePath}"`, repoRoot);
+    if (isActiveWorktree(repoRoot, worktreePath)) {
+      console.warn(
+        `⚠ Worktree conflict: ${worktreePath} already registered. Attempting removal…`,
+      );
+      const removed = shellSuccess(
+        `git worktree remove --force "${worktreePath}"`,
+        repoRoot,
+      );
+      if (!removed) {
+        // Removal failed — generate a unique suffix
+        const suffix = crypto.randomBytes(2).toString("hex");
+        worktreeName = `factory-${runId}-${crewLabel}-${suffix}`;
+        worktreePath = join(repoRoot, ".worktrees", worktreeName);
+        console.warn(`⚠ Removal failed. Using fallback path: ${worktreePath}`);
+      }
+    } else {
+      // Path exists but not a registered worktree — stale directory, force remove
+      shell(`git worktree remove --force "${worktreePath}"`, repoRoot);
+    }
   }
 
   mkdirSync(join(repoRoot, ".worktrees"), { recursive: true });
   shell(`git worktree add --detach "${worktreePath}" "${baseRef}"`, repoRoot);
+
+  // Verify worktree was actually created
+  if (!existsSync(join(worktreePath, ".git"))) {
+    throw new Error(
+      `Worktree creation failed: ${worktreePath} does not contain a .git file`,
+    );
+  }
 
   // Install dependencies if package.json exists (needed for gate checks)
   if (existsSync(join(worktreePath, "package.json"))) {
@@ -149,6 +189,36 @@ export function createWorktree(
 export function removeWorktree(repoRoot: string, worktreePath: string): void {
   shell(`git worktree remove --force "${worktreePath}"`, repoRoot);
   shell("git worktree prune", repoRoot);
+}
+
+/**
+ * Create a failed AttemptResult for when worktree creation fails.
+ * Used by callers that catch createWorktree errors.
+ */
+export function failedWorktreeResult(
+  task: Task,
+  crew: CrewConfig,
+  reason: string,
+): AttemptResult {
+  return {
+    task,
+    crew,
+    agent_success: false,
+    duration_sec: 0,
+    cost_usd: 0,
+    metrics: defaultMetrics({}),
+    worktree_path: "",
+    ci_results: {
+      build_passed: false,
+      build_reason: reason,
+      test_passed: false,
+      test_reason: reason,
+      lint_passed: false,
+      lint_reason: reason,
+    },
+    review_score: undefined,
+    critical_security_findings: 0,
+  };
 }
 
 // ─── Agent spawning ──────────────────────────────────────────────────────────

@@ -7,7 +7,13 @@
 
 import { describe, it } from "node:test";
 import * as assert from "node:assert/strict";
-import { writeFileSync, mkdirSync, rmSync, chmodSync } from "node:fs";
+import {
+  writeFileSync,
+  mkdirSync,
+  rmSync,
+  chmodSync,
+  existsSync,
+} from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import {
@@ -15,6 +21,8 @@ import {
   runTaskWithCrewAsync,
   createWorktree,
   removeWorktree,
+  isActiveWorktree,
+  failedWorktreeResult,
   type CrewConfig,
   type DispatchOptions,
 } from "../dispatch.js";
@@ -151,6 +159,69 @@ describe("runTaskWithCrewAsync", () => {
       removeWorktree(repoDir, wtAsync);
     } finally {
       process.env["PATH"] = originalPath;
+      rmSync(repoDir, { recursive: true, force: true });
+    }
+  });
+
+  it("handles worktree conflict by recovering with unique suffix", () => {
+    const { repoDir } = setupTestDir();
+
+    try {
+      // Create a worktree
+      const wt1 = createWorktree(repoDir, "conflict-run", "crew-a", "HEAD");
+      assert.ok(existsSync(wt1), "first worktree should exist");
+      assert.ok(
+        isActiveWorktree(repoDir, wt1),
+        "first worktree should be active",
+      );
+
+      // Create another worktree with the same run_id + crew_label
+      // The existing one should be removed and re-created
+      const wt2 = createWorktree(repoDir, "conflict-run", "crew-a", "HEAD");
+      assert.ok(existsSync(wt2), "second worktree should exist");
+      assert.ok(
+        existsSync(join(wt2, ".git")),
+        "second worktree should be valid git worktree",
+      );
+
+      // Clean up
+      removeWorktree(repoDir, wt2);
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true });
+    }
+  });
+
+  it("failedWorktreeResult returns correct structure", () => {
+    const result = failedWorktreeResult(
+      TEST_TASK,
+      TEST_CREW,
+      "worktree_conflict",
+    );
+    assert.equal(result.agent_success, false);
+    assert.equal(result.duration_sec, 0);
+    assert.equal(result.cost_usd, 0);
+    assert.equal(result.worktree_path, "");
+    assert.equal(result.ci_results.build_passed, false);
+    assert.equal(result.ci_results.build_reason, "worktree_conflict");
+    assert.ok(result.metrics, "should have default metrics");
+  });
+
+  it("createWorktree throws when git worktree add fails", () => {
+    const { repoDir } = setupTestDir();
+
+    try {
+      // Try to create a worktree from a non-existent ref
+      assert.throws(
+        () =>
+          createWorktree(
+            repoDir,
+            "bad-run",
+            "crew-x",
+            "non-existent-ref-abc123",
+          ),
+        /Worktree creation failed/,
+      );
+    } finally {
       rmSync(repoDir, { recursive: true, force: true });
     }
   });

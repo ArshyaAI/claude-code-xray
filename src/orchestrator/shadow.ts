@@ -39,6 +39,7 @@ import {
   removeWorktree,
   runTaskWithCrew,
   runTaskWithCrewAsync,
+  failedWorktreeResult,
 } from "./dispatch.js";
 import { parseTasks, type Task } from "./tasks.js";
 import { loadConfig, type FactoryConfig } from "./config.js";
@@ -286,15 +287,23 @@ export async function runShadowLeague(
     // Create ALL worktrees upfront
     const baseRef = getCurrentBranch(repoRoot);
     const crewWorktrees = new Map<string, string>();
+    const skippedCrews = new Set<string>();
     for (const crewConfig of crewConfigs) {
-      const worktreePath = createWorktree(
-        repoRoot,
-        runId,
-        crewConfig.label,
-        baseRef,
-      );
-      crewWorktrees.set(crewConfig.label, worktreePath);
-      activeWorktrees.push(worktreePath);
+      try {
+        const worktreePath = createWorktree(
+          repoRoot,
+          runId,
+          crewConfig.label,
+          baseRef,
+        );
+        crewWorktrees.set(crewConfig.label, worktreePath);
+        activeWorktrees.push(worktreePath);
+      } catch (err) {
+        console.error(
+          `⚠ Worktree conflict for crew "${crewConfig.label}": ${err instanceof Error ? err.message : err}. Skipping crew.`,
+        );
+        skippedCrews.add(crewConfig.label);
+      }
     }
 
     // Per-crew accumulators
@@ -317,9 +326,12 @@ export async function runShadowLeague(
           break;
         }
 
-        // Run all crews on this task in parallel
+        // Run all crews on this task in parallel (skip crews with worktree conflicts)
+        const activeCrews = crewConfigs.filter(
+          (c) => !skippedCrews.has(c.label),
+        );
         const results = await Promise.all(
-          crewConfigs.map((crewConfig) => {
+          activeCrews.map((crewConfig) => {
             const worktreePath = crewWorktrees.get(crewConfig.label)!;
             return runTaskWithCrewAsync(
               task,
@@ -331,8 +343,8 @@ export async function runShadowLeague(
         );
 
         // Collect results and score
-        for (let i = 0; i < crewConfigs.length; i++) {
-          const crewConfig = crewConfigs[i]!;
+        for (let i = 0; i < activeCrews.length; i++) {
+          const crewConfig = activeCrews[i]!;
           const attempt = results[i]!;
           const worktreePath = crewWorktrees.get(crewConfig.label)!;
 
@@ -422,12 +434,20 @@ export async function runShadowLeague(
 
       // Create worktree for this crew
       const baseRef = getCurrentBranch(repoRoot);
-      const worktreePath = createWorktree(
-        repoRoot,
-        runId,
-        crewConfig.label,
-        baseRef,
-      );
+      let worktreePath: string;
+      try {
+        worktreePath = createWorktree(
+          repoRoot,
+          runId,
+          crewConfig.label,
+          baseRef,
+        );
+      } catch (err) {
+        console.error(
+          `⚠ Worktree conflict for crew "${crewConfig.label}": ${err instanceof Error ? err.message : err}. Skipping crew.`,
+        );
+        continue;
+      }
       activeWorktrees.push(worktreePath);
 
       try {
