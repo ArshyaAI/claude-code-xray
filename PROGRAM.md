@@ -10,10 +10,10 @@
 - [x] Add terminal leaderboard output with colored rankings
   - Use ANSI colors for crew rankings
   - Show per-dimension scores in compact table
-- [ ] Wire up factory.yaml archetype to score normalization
+- [x] Wire up factory.yaml archetype to score normalization
   - Different archetypes have different throughput ceilings
   - Load archetype-specific defaults
-- [ ] Add --parallel flag implementation in dispatch.ts
+- [x] Add --parallel flag implementation in dispatch.ts
   - Use child_process.spawn instead of execSync
   - Track concurrent API connections against rate limits
 - [x] Implement shadow_runs and shadow_attempts DB recording
