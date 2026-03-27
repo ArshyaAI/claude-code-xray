@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0.0] - 2026-03-27
+
+### Added
+
+- Multi-agent crew pipeline: builder→reviewer→QA per task (per design doc)
+- Model routing: genotype.model_routing applied via `--model` flag per role
+- Tool policy enforcement: genotype.tool_policy applied via `--allowedTools`
+- Role-specific system prompts from genotype.prompt_policy
+- Auto-bootstrap: evo.db initialized automatically on first run
+- SKILL.md frontmatter with gstack v0.12 conventions (preamble-tier, prefix)
+- Complexity analysis, diff-hunk coverage, convention violations, doc coverage collectors
+- Review score parsing from SCORE: N in agent/reviewer output
+
+### Fixed
+
+- G_review gate blocked all scoring when reviewScore undefined (Phase 1 default pass)
+- Architecture gap: agents now run with genotype config instead of bare claude -p
+- "Stick to the plan" rule added to CLAUDE.md and project memory
+
 ## [0.2.0.0] - 2026-03-27
 
 ### Added
