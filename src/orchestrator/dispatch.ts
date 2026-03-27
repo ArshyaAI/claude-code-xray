@@ -159,7 +159,7 @@ export function runTaskWithCrew(
     // Spawn Claude Code agent with --prompt-file (safe from shell injection)
     const timeoutMs = options.task_timeout_sec * 1000;
     const result = execSync(
-      `claude --prompt-file NIGHT-TASK.md --dangerously-skip-permissions --output-format json 2>/dev/null`,
+      `cat NIGHT-TASK.md | claude -p --dangerously-skip-permissions --output-format json 2>/dev/null`,
       {
         cwd: worktreePath,
         timeout: timeoutMs,
