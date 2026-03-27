@@ -4,18 +4,18 @@
   - Remove the manual `archetype` requirement in factory.yaml
   - Detect from lockfiles and config: package.json with next → nextjs-app, Cargo.toml → rust-cli, go.mod → go-service
   - Fall back to factory.yaml if auto-detection is ambiguous
-- [ ] Add lineage visualization showing mutation history as ASCII tree
+- [x] Add lineage visualization showing mutation history as ASCII tree
   - Query genotypes table for parent_id chain
   - Render as tree: gen-0000 → gen-0001 (swap_model) → gen-0002 (tweak_cadence)
   - Include utility score at each node
-- [ ] Add factory history command showing trend lines across runs
+- [x] Add factory history command showing trend lines across runs
   - Query shadow_runs + evaluations for time-series data
   - Show utility trend, cost trend, promotion rate
   - Output as ASCII sparkline chart
 - [x] Add zero-config experience: factory run works without factory.yaml
   - Auto-detect archetype, use defaults for everything else
   - Only require PROGRAM.md with checkbox items
-- [ ] Improve terminal output narratives for Shadow League results
+- [x] Improve terminal output narratives for Shadow League results
   - Add mutation description in plain English ("swapped builder model from Sonnet to Opus")
   - Show which dimension improved/regressed most
   - Add cost breakdown per crew
