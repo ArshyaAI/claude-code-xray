@@ -5,7 +5,13 @@
  * Called by: skills/factory/factory.sh → node dist/orchestrator/cli.js
  */
 
-import { runShadowLeague, type ShadowRunOptions } from "./shadow.js";
+import {
+  runShadowLeague,
+  type ShadowRunOptions,
+  type ShadowRunResult,
+  type CrewResult,
+} from "./shadow.js";
+import type { ParetoDimensions } from "../evaluator/score.js";
 
 // ─── Argument parsing ────────────────────────────────────────────────────────
 
@@ -54,6 +60,122 @@ function parseArgs(argv: string[]): {
   return { command, options };
 }
 
+// ─── ANSI helpers ────────────────────────────────────────────────────────────
+
+const c = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  cyan: "\x1b[36m",
+  magenta: "\x1b[35m",
+};
+
+// ─── Leaderboard ─────────────────────────────────────────────────────────────
+
+function printLeaderboard(result: ShadowRunResult): void {
+  const line = "─".repeat(60);
+
+  console.log(`\n${c.bold}${c.cyan}${line}${c.reset}`);
+  console.log(`${c.bold}  SHADOW LEAGUE RESULTS${c.reset}`);
+  console.log(`${c.cyan}${line}${c.reset}\n`);
+
+  // Run metadata
+  const statusColor =
+    result.status === "completed"
+      ? c.green
+      : result.status === "budget_exceeded"
+        ? c.yellow
+        : c.red;
+  console.log(`  Run:      ${c.bold}${result.run_id}${c.reset}`);
+  console.log(`  Status:   ${statusColor}${result.status}${c.reset}`);
+  console.log(`  Cost:     $${result.total_cost_usd}`);
+  console.log(`  Duration: ${formatDuration(result.total_duration_sec)}`);
+  console.log("");
+
+  // Crew rankings
+  const sorted = [...result.crews].sort(
+    (a, b) => b.aggregate_utility - a.aggregate_utility,
+  );
+
+  console.log(`  ${c.bold}CREW RANKINGS${c.reset}\n`);
+  console.log(
+    `  ${"#".padEnd(3)} ${"Crew".padEnd(14)} ${"Genotype".padEnd(10)} ${"U(p)".padEnd(8)} ${"C".padEnd(5)} ${"R".padEnd(5)} ${"H".padEnd(5)} ${"Q".padEnd(5)} ${"T".padEnd(5)} ${"K".padEnd(5)} ${"S".padEnd(5)}`,
+  );
+  console.log(`  ${c.dim}${"─".repeat(78)}${c.reset}`);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const crew = sorted[i];
+    if (!crew) continue;
+
+    const rank =
+      i === 0
+        ? `${c.green}${c.bold}1st${c.reset}`
+        : `${c.dim}${i + 1}${i === 1 ? "nd" : "th"}${c.reset}`;
+    const labelColor = i === 0 ? c.green : c.dim;
+    const avgScores = computeAverageScores(crew);
+
+    const dims = avgScores
+      ? `${f(avgScores.C)} ${f(avgScores.R)} ${f(avgScores.H)} ${f(avgScores.Q)} ${f(avgScores.T)} ${f(avgScores.K)} ${f(avgScores.S)}`
+      : `${c.dim}  —     —     —     —     —     —     —${c.reset}`;
+
+    console.log(
+      `  ${rank.padEnd(3 + (i === 0 ? c.green.length + c.bold.length + c.reset.length : c.dim.length + c.reset.length))} ${labelColor}${crew.label.padEnd(14)}${c.reset} ${crew.genotype_id.padEnd(10)} ${c.bold}${crew.aggregate_utility.toFixed(4).padEnd(8)}${c.reset} ${dims}`,
+    );
+  }
+
+  console.log("");
+
+  // Promotion decision
+  if (result.promotion.should_promote) {
+    console.log(
+      `  ${c.green}${c.bold}PROMOTED${c.reset} ${result.promotion.winner_label} is the new champion!`,
+    );
+  } else {
+    console.log(
+      `  ${c.yellow}No promotion.${c.reset} ${result.promotion.reason}`,
+    );
+  }
+
+  if (result.promotion.sign_test) {
+    const st = result.promotion.sign_test;
+    const pColor = st.passed ? c.green : c.red;
+    console.log(
+      `  Sign test: ${pColor}p=${st.p_value}${c.reset} (n=${st.n_tasks})`,
+    );
+  }
+
+  console.log(`\n${c.cyan}${line}${c.reset}\n`);
+}
+
+function computeAverageScores(crew: CrewResult): ParetoDimensions | null {
+  const validScores = crew.scores
+    .filter((s) => s.scores !== null)
+    .map((s) => s.scores as ParetoDimensions);
+  if (validScores.length === 0) return null;
+
+  const dims: (keyof ParetoDimensions)[] = ["C", "R", "H", "Q", "T", "K", "S"];
+  const avg: Record<string, number> = {};
+  for (const d of dims) {
+    avg[d] = validScores.reduce((sum, s) => sum + s[d], 0) / validScores.length;
+  }
+  return avg as unknown as ParetoDimensions;
+}
+
+function f(v: number): string {
+  return v.toFixed(2).padEnd(5);
+}
+
+function formatDuration(sec: number): string {
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ${sec % 60}s`;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function main(): void {
@@ -63,45 +185,7 @@ function main(): void {
     case "run": {
       const result = runShadowLeague(options);
 
-      // Print leaderboard
-      console.log("\n=== SHADOW LEAGUE RESULTS ===\n");
-      console.log(`Run:      ${result.run_id}`);
-      console.log(`Status:   ${result.status}`);
-      console.log(`Cost:     $${result.total_cost_usd}`);
-      console.log(`Duration: ${result.total_duration_sec}s`);
-      console.log("");
-
-      // Crew rankings
-      const sorted = [...result.crews].sort(
-        (a, b) => b.aggregate_utility - a.aggregate_utility,
-      );
-      console.log("Crew Rankings:");
-      for (let i = 0; i < sorted.length; i++) {
-        const c = sorted[i];
-        if (!c) continue;
-        const medal = i === 0 ? ">>>" : "   ";
-        console.log(
-          `  ${medal} ${c.label.padEnd(12)} ${c.genotype_id.padEnd(10)} U=${c.aggregate_utility}`,
-        );
-      }
-      console.log("");
-
-      // Promotion decision
-      if (result.promotion.should_promote) {
-        console.log(
-          `PROMOTED: ${result.promotion.winner_label} is the new champion!`,
-        );
-      } else {
-        console.log(`No promotion. ${result.promotion.reason}`);
-      }
-
-      if (result.promotion.sign_test) {
-        console.log(
-          `Sign test: p=${result.promotion.sign_test.p_value} (n=${result.promotion.sign_test.n_tasks})`,
-        );
-      }
-
-      console.log("\n=============================\n");
+      printLeaderboard(result);
 
       // Exit with appropriate code
       process.exit(result.status === "failed" ? 1 : 0);
