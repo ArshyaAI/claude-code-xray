@@ -189,6 +189,105 @@ export function runSignTest(input: SignTestInput): SignTestResult {
   return result;
 }
 
+// ─── Per-dimension Pareto dominance test (Phase 2) ─────────────────────────
+
+export interface ParetoDominanceInput {
+  candidate_scores: ParetoDimensions[];
+  champion_scores: ParetoDimensions[];
+  alpha: number; // default 0.05
+}
+
+export interface ParetoDominanceResult {
+  passed: boolean;
+  n_tasks: number;
+  dimension_results: Record<
+    keyof ParetoDimensions,
+    { p_value: number; passed: boolean; n_wins: number; n_losses: number }
+  >;
+  rejection_reason?: RejectionReason;
+}
+
+/**
+ * Phase 2: Per-dimension Pareto dominance test.
+ * Runs an independent one-sided sign test on EACH of the 7 Pareto dimensions.
+ * The candidate must be non-inferior (p < alpha) on ALL dimensions to pass.
+ *
+ * Requires N >= 20 for adequate statistical power to detect medium effects.
+ * For N < 20, use the aggregate sign test (runSignTest) instead.
+ */
+export function runParetoDominanceTest(
+  input: ParetoDominanceInput,
+): ParetoDominanceResult {
+  const { candidate_scores, champion_scores, alpha } = input;
+  const n = candidate_scores.length;
+
+  if (n < 20) {
+    return {
+      passed: false,
+      n_tasks: n,
+      dimension_results: _emptyParetoDimensionResults(),
+      rejection_reason: "sign_test_failed",
+    };
+  }
+
+  const dims = Object.keys(
+    candidate_scores[0] ?? {},
+  ) as (keyof ParetoDimensions)[];
+  const dimension_results = {} as ParetoDominanceResult["dimension_results"];
+  let overall_passed = true;
+
+  for (const dim of dims) {
+    let wins = 0;
+    let losses = 0;
+
+    for (let i = 0; i < n; i++) {
+      const c = candidate_scores[i]?.[dim] ?? 0;
+      const ch = champion_scores[i]?.[dim] ?? 0;
+      if (c > ch) wins++;
+      else if (c < ch) losses++;
+    }
+
+    const trials = wins + losses;
+    const p = trials === 0 ? 1.0 : _binomialOneSidedP(wins, trials);
+    const dim_passed = p < alpha;
+
+    dimension_results[dim] = {
+      p_value: round4(p),
+      passed: dim_passed,
+      n_wins: wins,
+      n_losses: losses,
+    };
+
+    if (!dim_passed) {
+      overall_passed = false;
+    }
+  }
+
+  const result: ParetoDominanceResult = {
+    passed: overall_passed,
+    n_tasks: n,
+    dimension_results,
+  };
+  if (!overall_passed) {
+    result.rejection_reason = "sign_test_failed";
+  }
+  return result;
+}
+
+function _emptyParetoDimensionResults(): ParetoDominanceResult["dimension_results"] {
+  const dims: (keyof ParetoDimensions)[] = ["C", "R", "H", "Q", "T", "K", "S"];
+  const result = {} as ParetoDominanceResult["dimension_results"];
+  for (const d of dims) {
+    result[d] = {
+      p_value: 1.0,
+      passed: false,
+      n_wins: 0,
+      n_losses: 0,
+    };
+  }
+  return result;
+}
+
 // ─── Stage 2 & 3: Welch's t-test ─────────────────────────────────────────────
 
 export interface WelchTestInput {

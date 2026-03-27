@@ -25,7 +25,12 @@ import {
   type ParetoDimensions,
 } from "../evaluator/score.js";
 import { runAllGates, toHardGates } from "../evaluator/gates.js";
-import { runSignTest, type SignTestResult } from "../promoter/protocol.js";
+import {
+  runSignTest,
+  runParetoDominanceTest,
+  type SignTestResult,
+  type ParetoDominanceResult,
+} from "../promoter/protocol.js";
 import {
   type CrewConfig,
   type AttemptResult,
@@ -59,6 +64,8 @@ export interface ShadowRunOptions {
   seed: number | null;
   /** Variance check mode: run same genotype for all crews (no mutation). */
   varianceCheck: boolean;
+  /** Force per-dimension Pareto dominance test (requires N >= 20). */
+  fullPareto: boolean;
 }
 
 export interface ShadowRunResult {
@@ -84,6 +91,7 @@ export interface PromotionDecision {
   should_promote: boolean;
   winner_label: string;
   sign_test: SignTestResult | null;
+  pareto_dominance: ParetoDominanceResult | null;
   reason: string;
 }
 
@@ -99,6 +107,7 @@ const DEFAULT_OPTIONS: ShadowRunOptions = {
   dryRun: false,
   seed: null,
   varianceCheck: false,
+  fullPareto: false,
 };
 
 const MIN_TASKS = 8;
@@ -520,7 +529,7 @@ export async function runShadowLeague(
       : "completed";
 
   // Run sign test for promotion decision
-  const promotion = makePromotionDecision(crewResults);
+  const promotion = makePromotionDecision(crewResults, opts.fullPareto);
 
   // Record shadow run completion
   recordShadowRunEnd(runId, status, totalCost);
@@ -704,13 +713,17 @@ function buildCrewConfigs(
   return configs;
 }
 
-function makePromotionDecision(crewResults: CrewResult[]): PromotionDecision {
+function makePromotionDecision(
+  crewResults: CrewResult[],
+  forceFullPareto = false,
+): PromotionDecision {
   const champion = crewResults.find((c) => c.label === "champion");
   if (!champion) {
     return {
       should_promote: false,
       winner_label: "champion",
       sign_test: null,
+      pareto_dominance: null,
       reason: "No champion crew found",
     };
   }
@@ -731,7 +744,53 @@ function makePromotionDecision(crewResults: CrewResult[]): PromotionDecision {
       continue;
     }
 
-    // Phase 1: aggregate utility sign test only
+    const n = Math.min(candidateScores.length, championScores.length);
+    const usePareto = n >= 20 || forceFullPareto;
+
+    if (usePareto) {
+      // Phase 2: per-dimension Pareto dominance test
+      if (forceFullPareto && n < 20) {
+        return {
+          should_promote: false,
+          winner_label: "champion",
+          sign_test: null,
+          pareto_dominance: null,
+          reason: `--full-pareto requires N >= 20 tasks, got ${n}`,
+        };
+      }
+
+      const paretoResult = runParetoDominanceTest({
+        candidate_scores: candidateScores.slice(0, n),
+        champion_scores: championScores.slice(0, n),
+        alpha: 0.05,
+      });
+
+      if (paretoResult.passed) {
+        return {
+          should_promote: true,
+          winner_label: mutant.label,
+          sign_test: null,
+          pareto_dominance: paretoResult,
+          reason: `${mutant.label} (${mutant.genotype_id}) passed per-dimension Pareto dominance test (N=${n})`,
+        };
+      }
+
+      // Find which dimensions failed
+      const failedDims = Object.entries(paretoResult.dimension_results)
+        .filter(([, r]) => !r.passed)
+        .map(([d, r]) => `${d}(p=${r.p_value})`)
+        .join(", ");
+
+      return {
+        should_promote: false,
+        winner_label: "champion",
+        sign_test: null,
+        pareto_dominance: paretoResult,
+        reason: `Champion retains title. ${mutant.label} failed Pareto dominance on: ${failedDims}`,
+      };
+    }
+
+    // Phase 1: aggregate sign test (N < 20)
     const signTestResult = runSignTest({
       candidate_scores: candidateScores,
       champion_scores: championScores,
@@ -742,15 +801,16 @@ function makePromotionDecision(crewResults: CrewResult[]): PromotionDecision {
         should_promote: true,
         winner_label: mutant.label,
         sign_test: signTestResult,
+        pareto_dominance: null,
         reason: `${mutant.label} (${mutant.genotype_id}) passed sign test with p=${signTestResult.p_value}`,
       };
     }
 
-    // Even if sign test failed, report the best mutant
     return {
       should_promote: false,
       winner_label: "champion",
       sign_test: signTestResult,
+      pareto_dominance: null,
       reason: `Champion retains title. ${mutant.label} sign test p=${signTestResult.p_value} (need < 0.05)`,
     };
   }
@@ -759,6 +819,7 @@ function makePromotionDecision(crewResults: CrewResult[]): PromotionDecision {
     should_promote: false,
     winner_label: "champion",
     sign_test: null,
+    pareto_dominance: null,
     reason: "No valid mutant comparisons (insufficient data)",
   };
 }
@@ -800,6 +861,7 @@ function dryRunEstimate(
       should_promote: false,
       winner_label: "champion",
       sign_test: null,
+      pareto_dominance: null,
       reason: "Dry run — no actual execution",
     },
     total_cost_usd: 0,

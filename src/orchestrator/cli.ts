@@ -57,6 +57,9 @@ function parseArgs(argv: string[]): {
       case "--seed":
         options.seed = parseInt(argv[++i] ?? "0", 10);
         break;
+      case "--full-pareto":
+        options.fullPareto = true;
+        break;
       default:
         console.error(`Unknown option: ${arg}`);
         process.exit(1);
@@ -171,6 +174,24 @@ function printLeaderboard(result: ShadowRunResult): void {
     console.log(
       `  Sign test: ${pColor}p=${st.p_value}${c.reset} (n=${st.n_tasks})`,
     );
+  }
+
+  if (result.promotion.pareto_dominance) {
+    const pd = result.promotion.pareto_dominance;
+    const pdColor = pd.passed ? c.green : c.red;
+    console.log(
+      `  Pareto dominance: ${pdColor}${pd.passed ? "PASSED" : "FAILED"}${c.reset} (n=${pd.n_tasks})`,
+    );
+    const dimEntries = Object.entries(pd.dimension_results) as [
+      string,
+      { p_value: number; passed: boolean; n_wins: number; n_losses: number },
+    ][];
+    for (const [dim, dr] of dimEntries) {
+      const dimColor = dr.passed ? c.green : c.red;
+      console.log(
+        `    ${dim}: ${dimColor}p=${dr.p_value}${c.reset} (wins=${dr.n_wins}, losses=${dr.n_losses})`,
+      );
+    }
   }
 
   // One-liner summary from narrative engine
