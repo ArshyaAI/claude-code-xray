@@ -8,7 +8,13 @@
  */
 
 import { execSync, spawn, type ExecSyncOptions } from "node:child_process";
-import { writeFileSync, existsSync, mkdirSync } from "node:fs";
+import {
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { Task } from "./tasks.js";
 import type { Genotype } from "../genotype/schema.js";
@@ -19,8 +25,10 @@ import {
   budgetMetricsFromGenotype,
 } from "../evaluator/score.js";
 import { getArchetypeDefaults } from "./archetypes.js";
-import { collectMutationScore } from "./mutation-testing.js";
 import { collectComplexity } from "./complexity.js";
+import { collectMutationScore } from "./mutation-testing.js";
+import { collectDiffHunkCoverage } from "./coverage.js";
+import { collectConventionViolations } from "./conventions.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -198,26 +206,29 @@ export function runTaskWithCrew(
 
   // Collect metrics from the worktree
   const ciResults = collectCiResults(worktreePath);
-  const reviewScore = collectReviewScore(worktreePath);
+  const reviewScore = collectReviewScore(worktreePath, agentOutput);
   const criticalFindings = collectSecurityFindings(worktreePath);
   const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
   const mutationScore = collectMutationScore(worktreePath);
   const complexity = collectComplexity(worktreePath);
+  const diffCoverage = collectDiffHunkCoverage(worktreePath);
+  const conventions = collectConventionViolations(worktreePath);
   const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
   const archetypeDefaults = getArchetypeDefaults(options.archetype);
   const metrics = defaultMetrics({
     lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
+    cyclomatic_complexity: complexity,
+    diff_hunk_coverage: diffCoverage,
     items_completed: agentSuccess && ciResults.build_passed ? 1 : 0,
     time_hours: durationSec / 3600,
     cost_per_item_usd: costUsd,
     budget_per_item_usd: budgetMetrics.budget_per_item_usd,
     guardrails_passed: criticalFindings === 0,
-    convention_violations: 0,
+    convention_violations: conventions,
     kloc: 1.0,
     throughput_max: archetypeDefaults.throughput_max,
     mutation_score: mutationScore,
-    cyclomatic_complexity: complexity,
   });
 
   return {
@@ -296,7 +307,7 @@ export function runTaskWithCrewAsync(
       const agentSuccess = !killed && code === 0;
 
       const ciResults = collectCiResults(worktreePath);
-      const reviewScore = collectReviewScore(worktreePath);
+      const reviewScore = collectReviewScore(worktreePath, agentOutput);
       const criticalFindings = collectSecurityFindings(worktreePath);
       const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
@@ -336,7 +347,7 @@ export function runTaskWithCrewAsync(
       const durationSec = Math.round((Date.now() - startTime) / 1000);
       const costUsd = parseCostFromOutput(agentOutput, durationSec);
       const ciResults = collectCiResults(worktreePath);
-      const reviewScore = collectReviewScore(worktreePath);
+      const reviewScore = collectReviewScore(worktreePath, agentOutput);
       const criticalFindings = collectSecurityFindings(worktreePath);
 
       const mutationScore = collectMutationScore(worktreePath);
@@ -423,9 +434,39 @@ function collectCiResults(worktreePath: string): AttemptResult["ci_results"] {
   return result;
 }
 
-function collectReviewScore(_worktreePath: string): number | undefined {
-  // Phase 1: review score is collected if /review was run and wrote SCORE: N
-  // For now, return undefined (neutral) — the gate will use the default
+/**
+ * Parse a SCORE: N value from text content.
+ * Exported for testing.
+ */
+export function parseReviewScore(text: string): number | undefined {
+  const match = text.match(/SCORE:\s*(\d+)/i);
+  if (!match?.[1]) return undefined;
+  const score = parseInt(match[1], 10);
+  if (score < 0 || score > 100) return undefined;
+  return score;
+}
+
+function collectReviewScore(
+  worktreePath: string,
+  agentOutput: string,
+): number | undefined {
+  const fromOutput = parseReviewScore(agentOutput);
+  if (fromOutput !== undefined) return fromOutput;
+
+  const candidates = [".claude/review-output.txt", "REVIEW.md"];
+  for (const file of candidates) {
+    const filePath = join(worktreePath, file);
+    if (existsSync(filePath)) {
+      try {
+        const content = readFileSync(filePath, "utf-8");
+        const score = parseReviewScore(content);
+        if (score !== undefined) return score;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   return undefined;
 }
 
