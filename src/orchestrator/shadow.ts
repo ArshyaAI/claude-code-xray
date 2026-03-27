@@ -17,7 +17,8 @@ import {
   validateGenotype,
   type Genotype,
 } from "../genotype/schema.js";
-import { mutate } from "../genotype/mutate.js";
+import { mutate, type MutationManifest } from "../genotype/mutate.js";
+export type { MutationManifest } from "../genotype/mutate.js";
 import {
   evaluate,
   type ScoreResult,
@@ -75,6 +76,8 @@ export interface CrewResult {
   attempts: AttemptResult[];
   scores: ScoreResult[];
   aggregate_utility: number;
+  /** Mutation manifest — only present for mutant crews. */
+  mutation_manifest?: MutationManifest | undefined;
 }
 
 export interface PromotionDecision {
@@ -386,6 +389,7 @@ export async function runShadowLeague(
         attempts,
         scores,
         aggregate_utility: Math.round(aggregateUtility * 10000) / 10000,
+        mutation_manifest: crewConfig.mutation_manifest,
       });
     }
   } else {
@@ -497,6 +501,7 @@ export async function runShadowLeague(
         attempts,
         scores,
         aggregate_utility: Math.round(aggregateUtility * 10000) / 10000,
+        mutation_manifest: crewConfig.mutation_manifest,
       });
     }
   }
@@ -661,11 +666,17 @@ function recordShadowAttempt(
   );
 }
 
+interface CrewConfigWithManifest extends CrewConfig {
+  mutation_manifest?: MutationManifest;
+}
+
 function buildCrewConfigs(
   champion: Genotype,
   opts: ShadowRunOptions,
-): CrewConfig[] {
-  const configs: CrewConfig[] = [{ genotype: champion, label: "champion" }];
+): CrewConfigWithManifest[] {
+  const configs: CrewConfigWithManifest[] = [
+    { genotype: champion, label: "champion" },
+  ];
 
   if (opts.varianceCheck) {
     // Variance check: all crews use the same champion genotype
@@ -685,6 +696,7 @@ function buildCrewConfigs(
       configs.push({
         genotype: result.genotype,
         label: `mutant-${i + 1}`,
+        mutation_manifest: result.manifest,
       });
     }
   }

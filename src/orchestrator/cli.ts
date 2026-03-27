@@ -14,6 +14,11 @@ import {
 import type { ParetoDimensions } from "../evaluator/score.js";
 import { printLineage } from "./lineage.js";
 import { showHistory } from "./history.js";
+import {
+  describeMutation,
+  describeScoreComparison,
+  oneLinerResult,
+} from "./narrative.js";
 
 // ─── Argument parsing ────────────────────────────────────────────────────────
 
@@ -108,6 +113,12 @@ function printLeaderboard(result: ShadowRunResult): void {
   );
   console.log(`  ${c.dim}${"─".repeat(78)}${c.reset}`);
 
+  // Pre-compute champion average scores for narrative comparisons
+  const championCrew = result.crews.find((cr) => cr.label === "champion");
+  const championAvgScores = championCrew
+    ? computeAverageScores(championCrew)
+    : null;
+
   for (let i = 0; i < sorted.length; i++) {
     const crew = sorted[i];
     if (!crew) continue;
@@ -126,6 +137,19 @@ function printLeaderboard(result: ShadowRunResult): void {
     console.log(
       `  ${rank.padEnd(3 + (i === 0 ? c.green.length + c.bold.length + c.reset.length : c.dim.length + c.reset.length))} ${labelColor}${crew.label.padEnd(14)}${c.reset} ${crew.genotype_id.padEnd(10)} ${c.bold}${crew.aggregate_utility.toFixed(4).padEnd(8)}${c.reset} ${dims}`,
     );
+
+    // Mutation narrative for mutant crews
+    if (crew.mutation_manifest) {
+      console.log(
+        `    ${c.dim}${describeMutation(crew.mutation_manifest)}${c.reset}`,
+      );
+      if (avgScores && championAvgScores) {
+        const champU = championCrew?.aggregate_utility ?? 0;
+        console.log(
+          `    ${c.dim}${describeScoreComparison(avgScores, championAvgScores, crew.aggregate_utility, champU)}${c.reset}`,
+        );
+      }
+    }
   }
 
   console.log("");
@@ -146,6 +170,18 @@ function printLeaderboard(result: ShadowRunResult): void {
     const pColor = st.passed ? c.green : c.red;
     console.log(
       `  Sign test: ${pColor}p=${st.p_value}${c.reset} (n=${st.n_tasks})`,
+    );
+  }
+
+  // One-liner summary from narrative engine
+  const bestMutant = result.crews.find(
+    (cr) => cr.mutation_manifest !== undefined,
+  );
+  if (bestMutant?.mutation_manifest) {
+    const mutationDesc = describeMutation(bestMutant.mutation_manifest);
+    const pValue = result.promotion.sign_test?.p_value ?? null;
+    console.log(
+      `\n  ${c.magenta}${oneLinerResult(result.promotion.should_promote, mutationDesc, pValue)}${c.reset}`,
     );
   }
 
