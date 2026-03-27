@@ -1,13 +1,13 @@
 # Factory Work Items
 
-- [ ] Add DB integration for shadow.ts to load/save champion from evo.db
+- [x] Add DB integration for shadow.ts to load/save champion from evo.db
   - Query genotypes table for status='champion'
   - Insert new genotypes after mutation
   - Record evaluations with stage='shadow'
-- [ ] Implement cost parsing from Claude Code API usage output
+- [x] Implement cost parsing from Claude Code API usage output
   - Parse the JSON cost summary that claude outputs on exit
   - Fall back to duration-based estimate if parsing fails
-- [ ] Add terminal leaderboard output with colored rankings
+- [x] Add terminal leaderboard output with colored rankings
   - Use ANSI colors for crew rankings
   - Show per-dimension scores in compact table
 - [ ] Wire up factory.yaml archetype to score normalization
@@ -16,13 +16,13 @@
 - [ ] Add --parallel flag implementation in dispatch.ts
   - Use child_process.spawn instead of execSync
   - Track concurrent API connections against rate limits
-- [ ] Implement shadow_runs and shadow_attempts DB recording
+- [x] Implement shadow_runs and shadow_attempts DB recording
   - Insert shadow_run at start, update on completion
   - Insert shadow_attempt per crew per task
-- [ ] Add SIGTERM handler for graceful shutdown
+- [x] Add SIGTERM handler for graceful shutdown
   - Kill child agent processes
   - Record partial scores
   - Clean up worktrees
-- [ ] Write integration test with mock Claude agent
+- [x] Write integration test with mock Claude agent
   - Create stub script that writes a file and exits 0
   - Verify full pipeline from PROGRAM.md to promotion decision
