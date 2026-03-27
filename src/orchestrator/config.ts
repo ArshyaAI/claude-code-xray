@@ -7,6 +7,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { detectArchetype } from "./detect-archetype.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -32,7 +33,7 @@ const VALID_ARCHETYPES: ReadonlySet<string> = new Set<Archetype>([
 export type ActiveRole = "builder" | "reviewer" | "qa";
 
 export interface FactoryConfig {
-  /** Repo archetype — required in Phase 1 (auto-detection in Phase 2). */
+  /** Repo archetype — explicit in factory.yaml or auto-detected from project files. */
   archetype: Archetype;
   /** Max parallel crews (default: 5). */
   max_crews: number;
@@ -60,6 +61,10 @@ export interface ConfigValidation {
   valid: boolean;
   errors: string[];
   config: FactoryConfig;
+  /** How the archetype was resolved: 'explicit' (factory.yaml) or 'detected'. */
+  archetypeSource: "explicit" | "detected";
+  /** Human-readable reason for the archetype choice. */
+  archetypeReason: string;
 }
 
 /**
@@ -74,10 +79,13 @@ export function loadConfig(repoRoot: string): ConfigValidation {
   const errors: string[] = [];
 
   if (!existsSync(configPath)) {
+    const detected = detectArchetype(repoRoot);
     return {
       valid: true,
       errors: [],
-      config: { ...DEFAULTS },
+      config: { ...DEFAULTS, archetype: detected.archetype },
+      archetypeSource: "detected",
+      archetypeReason: detected.reason,
     };
   }
 
@@ -89,6 +97,8 @@ export function loadConfig(repoRoot: string): ConfigValidation {
       valid: false,
       errors: [`Failed to read ${configPath}`],
       config: { ...DEFAULTS },
+      archetypeSource: "detected",
+      archetypeReason: "factory.yaml unreadable — using default",
     };
   }
 
@@ -98,15 +108,26 @@ export function loadConfig(repoRoot: string): ConfigValidation {
 
   // Validate and apply
   const config: FactoryConfig = { ...DEFAULTS };
+  let archetypeSource: "explicit" | "detected" = "detected";
+  let archetypeReason: string;
 
   if (parsed["archetype"] !== undefined) {
     if (VALID_ARCHETYPES.has(parsed["archetype"])) {
       config.archetype = parsed["archetype"] as Archetype;
+      archetypeSource = "explicit";
+      archetypeReason = `factory.yaml declares archetype: ${parsed["archetype"]}`;
     } else {
       errors.push(
         `Invalid archetype: "${parsed["archetype"]}". Must be one of: ${[...VALID_ARCHETYPES].join(", ")}`,
       );
+      const detected = detectArchetype(repoRoot);
+      config.archetype = detected.archetype;
+      archetypeReason = `invalid archetype in factory.yaml — auto-detected: ${detected.reason}`;
     }
+  } else {
+    const detected = detectArchetype(repoRoot);
+    config.archetype = detected.archetype;
+    archetypeReason = detected.reason;
   }
 
   if (parsed["max_crews"] !== undefined) {
@@ -150,6 +171,8 @@ export function loadConfig(repoRoot: string): ConfigValidation {
     valid: errors.length === 0,
     errors,
     config,
+    archetypeSource,
+    archetypeReason: archetypeReason!,
   };
 }
 

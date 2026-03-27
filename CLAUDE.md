@@ -35,7 +35,7 @@ Multi-repo autonomous build system. Spawns Claude Code agents in git worktrees o
 ## Testing
 
 - Run: `npx tsc && node --test dist/**/*.test.js`
-- 39 tests (31 unit + 8 integration)
+- 52 tests (44 unit + 8 integration)
 - Integration tests use mock claude agent (stub script)
 
 ## Do Not
