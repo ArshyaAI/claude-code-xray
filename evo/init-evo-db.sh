@@ -7,11 +7,19 @@
 # Creates or migrates ~/.factory/evo.db. Safe to run multiple times (idempotent).
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
+trap 'echo "ERROR: init-evo-db.sh failed at line $LINENO" >&2' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# ── Parse arguments ───────────────────────────────────────────────────────────
 DB_PATH="${FACTORY_EVO_DB:-$HOME/.factory/evo.db}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --db-path) DB_PATH="$2"; shift 2 ;;
+    *) echo "ERROR: Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
 SCHEMA_FILE="$SCRIPT_DIR/schema.sql"
 POLICY_FILE="$REPO_ROOT/config/policy.yml"
 
@@ -24,9 +32,18 @@ fi
 # ── Create parent directory ───────────────────────────────────────────────────
 mkdir -p "$(dirname "$DB_PATH")"
 
+# ── Validate schema file exists ─────────────────────────────────────────────
+if [[ ! -f "$SCHEMA_FILE" ]]; then
+  echo "ERROR: schema.sql not found at $SCHEMA_FILE" >&2
+  exit 1
+fi
+
 # ── Apply schema ──────────────────────────────────────────────────────────────
 echo "Initializing evo.db at $DB_PATH ..."
-sqlite3 "$DB_PATH" < "$SCHEMA_FILE"
+if ! sqlite3 "$DB_PATH" < "$SCHEMA_FILE"; then
+  echo "ERROR: Failed to apply schema.sql to $DB_PATH" >&2
+  exit 1
+fi
 echo "  Schema applied."
 
 # ── Compute and stamp policy.yml sha256 ──────────────────────────────────────
@@ -106,22 +123,24 @@ budget:
   max_cost_per_round_usd: 20.00
 YAML
 )
-  python3 - "$DB_PATH" "$SEED_YAML" <<'PY'
-import sys, sqlite3
-db_path = sys.argv[1]
-yaml_content = sys.argv[2]
-conn = sqlite3.connect(db_path)
-conn.execute(
-    "INSERT INTO genotypes (id, parent_id, yaml, created_at, status, niche, generation) VALUES (?,?,?,?,?,?,?)",
-    ("gen-0000", None, yaml_content, "2026-03-20T00:00:00Z", "champion", "typescript-backend", 0)
-)
-conn.commit()
-conn.close()
-PY
+  # Use pure sqlite3 — no python3 dependency needed
+  ESCAPED_YAML="${SEED_YAML//\'/\'\'}"
+  sqlite3 "$DB_PATH" "INSERT INTO genotypes (id, parent_id, yaml, created_at, status, niche, generation) VALUES ('gen-0000', NULL, '${ESCAPED_YAML}', '2026-03-20T00:00:00Z', 'champion', 'typescript-backend', 0);"
   echo "  Seeded champion genotype gen-0000."
 else
   echo "  Champion genotype gen-0000 already exists. Skipping seed."
 fi
+
+# ── Integrity check: verify all 7 expected tables exist ───────────────────────
+EXPECTED_TABLES="cemetery conventions evaluations genotypes memory promotions schema_meta"
+ACTUAL_TABLES=$(sqlite3 "$DB_PATH" "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;" | tr '\n' ' ' | sed 's/ $//')
+if [[ "$ACTUAL_TABLES" != "$EXPECTED_TABLES" ]]; then
+  echo "ERROR: Table integrity check failed." >&2
+  echo "  Expected: $EXPECTED_TABLES" >&2
+  echo "  Got:      $ACTUAL_TABLES" >&2
+  exit 1
+fi
+echo "  Integrity check passed: all 7 tables present."
 
 # ── Verify ────────────────────────────────────────────────────────────────────
 echo ""
