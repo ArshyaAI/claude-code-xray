@@ -56,6 +56,8 @@ export interface ShadowRunOptions {
   dryRun: boolean;
   /** Specific mutation seed for reproducibility. */
   seed: number | null;
+  /** Variance check mode: run same genotype for all crews (no mutation). */
+  varianceCheck: boolean;
 }
 
 export interface ShadowRunResult {
@@ -93,6 +95,7 @@ const DEFAULT_OPTIONS: ShadowRunOptions = {
   keepWorktrees: false,
   dryRun: false,
   seed: null,
+  varianceCheck: false,
 };
 
 const MIN_TASKS = 8;
@@ -653,15 +656,26 @@ function buildCrewConfigs(
 ): CrewConfig[] {
   const configs: CrewConfig[] = [{ genotype: champion, label: "champion" }];
 
-  // Generate mutants
-  const mutantCount = Math.max(1, opts.crews - 1);
-  for (let i = 0; i < mutantCount; i++) {
-    const mutationOpts = opts.seed !== null ? { seed: opts.seed + i } : {};
-    const result = mutate(champion, mutationOpts);
-    configs.push({
-      genotype: result.genotype,
-      label: `mutant-${i + 1}`,
-    });
+  if (opts.varianceCheck) {
+    // Variance check: all crews use the same champion genotype
+    const extraCrews = Math.max(1, opts.crews - 1);
+    for (let i = 0; i < extraCrews; i++) {
+      configs.push({
+        genotype: champion,
+        label: `champion-replica-${i + 1}`,
+      });
+    }
+  } else {
+    // Normal mode: generate mutants
+    const mutantCount = Math.max(1, opts.crews - 1);
+    for (let i = 0; i < mutantCount; i++) {
+      const mutationOpts = opts.seed !== null ? { seed: opts.seed + i } : {};
+      const result = mutate(champion, mutationOpts);
+      configs.push({
+        genotype: result.genotype,
+        label: `mutant-${i + 1}`,
+      });
+    }
   }
 
   return configs;

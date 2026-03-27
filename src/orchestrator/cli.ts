@@ -196,7 +196,8 @@ async function main(): Promise<void> {
       // Variance check: run same genotype twice
       const vcOptions: Partial<ShadowRunOptions> = {
         ...options,
-        crews: 2, // Force 2 crews (both champion — no mutant)
+        crews: 2,
+        varianceCheck: true, // Both crews use same champion genotype
       };
       console.log("Variance check mode: running champion vs champion");
       console.log(

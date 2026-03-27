@@ -165,6 +165,7 @@ export function runTaskWithCrew(
         timeout: timeoutMs,
         stdio: ["pipe", "pipe", "pipe"],
         encoding: "utf-8" as BufferEncoding,
+        env: { ...process.env },
       },
     );
     agentOutput = typeof result === "string" ? result : "";
