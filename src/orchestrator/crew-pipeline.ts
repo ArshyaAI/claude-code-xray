@@ -228,7 +228,14 @@ export function runCrewPipeline(
     const qaPrompt = buildSystemPrompt("qa", genotype);
     // QA gets same tools as builder (needs bash for running tests)
     const qaTools = [...genotype.tool_policy.builder_tools] as string[];
-    results.qa = runRole("qa", qaRoute, qaTools, qaPrompt, worktreePath, timeout_sec);
+    results.qa = runRole(
+      "qa",
+      qaRoute,
+      qaTools,
+      qaPrompt,
+      worktreePath,
+      timeout_sec,
+    );
   }
 
   // Totals
@@ -240,6 +247,20 @@ export function runCrewPipeline(
     results.qa.duration_sec;
 
   return results;
+}
+
+// ─── Retry constants ────────────────────────────────────────────────────────
+
+const MAX_RETRIES = 3;
+const BACKOFF_SECONDS = [5, 15, 45];
+const RATE_LIMIT_PATTERNS = /rate_limit|429|overloaded/i;
+
+function sleepSync(seconds: number): void {
+  execSync(`sleep ${seconds}`, { stdio: "ignore" });
+}
+
+function isRateLimitError(stderr: string): boolean {
+  return RATE_LIMIT_PATTERNS.test(stderr);
 }
 
 // ─── Role execution ──────────────────────────────────────────────────────────
@@ -256,57 +277,82 @@ function runRole(
   let output = "";
   let success = false;
 
-  try {
-    const cliFlags = buildClaudeFlags(route, tools);
-    const flagStr = cliFlags.length > 0 ? " " + cliFlags.join(" ") : "";
+  const cliFlags = buildClaudeFlags(route, tools);
+  const flagStr = cliFlags.length > 0 ? " " + cliFlags.join(" ") : "";
 
-    // Write system prompt to a temp file for the agent
-    const promptFile = join(worktreePath, `.factory-${role}-prompt.md`);
-    const taskFile =
-      role === "builder" ? "NIGHT-TASK.md" : `.factory-${role}-prompt.md`;
+  // Write system prompt to a temp file for the agent
+  const promptFile = join(worktreePath, `.factory-${role}-prompt.md`);
+  const taskFile =
+    role === "builder" ? "NIGHT-TASK.md" : `.factory-${role}-prompt.md`;
 
-    if (role !== "builder") {
-      writeFileSync(promptFile, systemPrompt, "utf-8");
-    }
+  if (role !== "builder") {
+    writeFileSync(promptFile, systemPrompt, "utf-8");
+  }
 
-    // For builder: pipe NIGHT-TASK.md with system prompt prepended
-    // For reviewer/QA: pipe the role-specific prompt
-    let cmd: string;
-    if (role === "builder") {
-      // Prepend system prompt to the task
-      const fullPrompt =
-        systemPrompt + "\n\n---\n\n" + readTaskFile(worktreePath);
-      writeFileSync(
-        join(worktreePath, ".factory-builder-full.md"),
-        fullPrompt,
-        "utf-8",
-      );
-      cmd = `cat .factory-builder-full.md | claude -p --dangerously-skip-permissions${flagStr} --output-format json 2>/dev/null`;
-    } else {
-      cmd = `cat ${taskFile} | claude -p --dangerously-skip-permissions${flagStr} --output-format json 2>/dev/null`;
-    }
+  // For builder: pipe NIGHT-TASK.md with system prompt prepended
+  // For reviewer/QA: pipe the role-specific prompt
+  let cmd: string;
+  if (role === "builder") {
+    const fullPrompt =
+      systemPrompt + "\n\n---\n\n" + readTaskFile(worktreePath);
+    writeFileSync(
+      join(worktreePath, ".factory-builder-full.md"),
+      fullPrompt,
+      "utf-8",
+    );
+    cmd = `cat .factory-builder-full.md | claude -p --dangerously-skip-permissions${flagStr} --output-format json`;
+  } else {
+    cmd = `cat ${taskFile} | claude -p --dangerously-skip-permissions${flagStr} --output-format json`;
+  }
 
-    const result = execSync(cmd, {
-      cwd: worktreePath,
-      timeout: timeout_sec * 1000,
-      stdio: ["pipe", "pipe", "pipe"],
-      encoding: "utf-8" as BufferEncoding,
-      env: { ...process.env },
-    });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = execSync(cmd, {
+        cwd: worktreePath,
+        timeout: timeout_sec * 1000,
+        stdio: ["pipe", "pipe", "pipe"],
+        encoding: "utf-8" as BufferEncoding,
+        env: { ...process.env },
+      });
 
-    output = typeof result === "string" ? result : "";
-    success = true;
-  } catch (e: unknown) {
-    const err = e as {
-      killed?: boolean;
-      code?: string | number;
-      stdout?: string;
-    };
-    output = err.stdout ?? "";
-    if (err.killed) {
-      success = false;
-    } else if (err.code === 0 || err.code === "0") {
+      output = typeof result === "string" ? result : "";
       success = true;
+      break;
+    } catch (e: unknown) {
+      const err = e as {
+        killed?: boolean;
+        code?: string | number;
+        stdout?: string;
+        stderr?: string;
+      };
+      output = err.stdout ?? "";
+
+      // Timeout — don't retry
+      if (err.killed) {
+        success = false;
+        break;
+      }
+
+      // Exit code 0 means success despite throw (e.g. stderr output)
+      if (err.code === 0 || err.code === "0") {
+        success = true;
+        break;
+      }
+
+      // Rate limit — retry with backoff
+      const stderr = err.stderr ?? "";
+      if (attempt < MAX_RETRIES && isRateLimitError(stderr)) {
+        const delaySec = BACKOFF_SECONDS[attempt] ?? 45;
+        console.error(
+          `Rate limited on ${role} agent, retrying in ${delaySec}s (attempt ${attempt + 1}/${MAX_RETRIES})`,
+        );
+        sleepSync(delaySec);
+        continue;
+      }
+
+      // Non-retryable error
+      success = false;
+      break;
     }
   }
 

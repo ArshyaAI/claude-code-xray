@@ -140,9 +140,10 @@ describe("runTaskWithCrewAsync", () => {
       assert.equal(syncResult.agent_success, true, "sync should succeed");
       assert.equal(asyncResult.agent_success, true, "async should succeed");
 
-      // Both should parse cost from mock output
-      assert.equal(syncResult.cost_usd, 0.42, "sync cost parsed");
-      assert.equal(asyncResult.cost_usd, 0.42, "async cost parsed");
+      // Sync cost is summed across all 3 roles (builder+reviewer+qa), each returns 0.42
+      assert.equal(syncResult.cost_usd, 1.26, "sync cost is sum of 3 roles");
+      // Async spawns builder only, so cost is single-role
+      assert.equal(asyncResult.cost_usd, 0.42, "async cost from builder");
 
       // CI results structure matches
       assert.equal(typeof asyncResult.ci_results.build_passed, "boolean");
