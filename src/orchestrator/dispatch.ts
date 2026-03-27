@@ -120,6 +120,11 @@ export function createWorktree(
   mkdirSync(join(repoRoot, ".worktrees"), { recursive: true });
   shell(`git worktree add --detach "${worktreePath}" "${baseRef}"`, repoRoot);
 
+  // Install dependencies if package.json exists (needed for gate checks)
+  if (existsSync(join(worktreePath, "package.json"))) {
+    shell("npm install --ignore-scripts 2>/dev/null", worktreePath);
+  }
+
   return worktreePath;
 }
 
