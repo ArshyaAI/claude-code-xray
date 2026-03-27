@@ -26,6 +26,9 @@ node_modules/
 # Build output
 dist/
 
+# Shadow League worktrees
+.worktrees/
+
 # Exports / data dumps
 paperclip-exports/
 paperclip/
