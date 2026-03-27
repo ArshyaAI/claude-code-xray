@@ -8,10 +8,15 @@
  * Call chain: factory.sh → shadow.ts → dispatch.ts → gates+score → protocol
  */
 
-import { execSync } from "node:child_process";
+import { execSync, type ExecSyncOptions } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { SEED_GENOTYPE, type Genotype } from "../genotype/schema.js";
+import { homedir } from "node:os";
+import {
+  SEED_GENOTYPE,
+  validateGenotype,
+  type Genotype,
+} from "../genotype/schema.js";
 import { mutate } from "../genotype/mutate.js";
 import {
   evaluate,
@@ -91,6 +96,41 @@ const DEFAULT_OPTIONS: ShadowRunOptions = {
 
 const MIN_TASKS = 8;
 
+// ─── DB helpers ─────────────────────────────────────────────────────────────
+
+const DB_EXEC_OPTS: ExecSyncOptions = {
+  encoding: "utf-8" as BufferEncoding,
+  stdio: ["pipe", "pipe", "pipe"],
+};
+
+function getDbPath(): string {
+  return process.env.FACTORY_DB ?? join(homedir(), ".factory", "evo.db");
+}
+
+/** Run a sqlite3 query and return stdout. Throws on missing DB. */
+function dbQuery(sql: string): string {
+  const db = getDbPath();
+  if (!existsSync(db)) {
+    throw new Error(`evo.db not found at ${db}`);
+  }
+  const escaped = sql.replace(/'/g, "'\\''");
+  const result = execSync(`sqlite3 '${db}' '${escaped}'`, DB_EXEC_OPTS);
+  return (typeof result === "string" ? result : "").trim();
+}
+
+/** Run a sqlite3 statement (INSERT/UPDATE). Returns true on success. */
+function dbExec(sql: string): boolean {
+  const db = getDbPath();
+  if (!existsSync(db)) return false;
+  const escaped = sql.replace(/'/g, "'\\''");
+  try {
+    execSync(`sqlite3 '${db}' '${escaped}'`, DB_EXEC_OPTS);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Main runner ─────────────────────────────────────────────────────────────
 
 /**
@@ -149,11 +189,27 @@ export function runShadowLeague(
     return dryRunEstimate(runId, tasks, opts, config, budgetCap);
   }
 
+  // Record shadow run start
+  recordShadowRunStart(
+    runId,
+    repoRoot,
+    config.archetype,
+    budgetCap,
+    tasks.length,
+    opts.crews,
+  );
+
   // Load champion genotype
   const champion = loadChampion(repoRoot);
+  const championGen = getGeneration(champion.id);
 
-  // Generate mutant(s)
+  // Generate mutant(s) and persist them
   const crewConfigs = buildCrewConfigs(champion, opts);
+  for (const crew of crewConfigs) {
+    if (crew.label !== "champion") {
+      saveGenotype(crew.genotype, championGen);
+    }
+  }
 
   // Dispatch options
   const dispatchOpts: DispatchOptions = {
@@ -253,6 +309,21 @@ export function runShadowLeague(
         });
 
         scores.push(scoreResult);
+
+        // Persist evaluation and attempt to evo.db
+        const evalId = saveEvaluation(
+          scoreResult,
+          attempt.cost_usd,
+          attempt.duration_sec,
+        );
+        recordShadowAttempt(
+          runId,
+          crewConfig.genotype.id,
+          task,
+          worktreePath,
+          attempt,
+          evalId,
+        );
       }
     } finally {
       // Clean up worktree
@@ -299,6 +370,9 @@ export function runShadowLeague(
   // Run sign test for promotion decision
   const promotion = makePromotionDecision(crewResults);
 
+  // Record shadow run completion
+  recordShadowRunEnd(runId, status, totalCost);
+
   return {
     run_id: runId,
     status,
@@ -330,9 +404,114 @@ function getCurrentBranch(repoRoot: string): string {
 }
 
 function loadChampion(_repoRoot: string): Genotype {
-  // Phase 1: load from seed. Phase 2: load from evo.db
-  // TODO: Query evo.db for status='champion', fallback to SEED_GENOTYPE
-  return SEED_GENOTYPE;
+  try {
+    const raw = dbQuery(
+      'SELECT yaml FROM genotypes WHERE status="champion" LIMIT 1',
+    );
+    if (!raw) return SEED_GENOTYPE;
+
+    const parsed: unknown = JSON.parse(raw);
+    const validation = validateGenotype(parsed);
+    if (!validation.valid) {
+      console.error(
+        `Champion genotype failed validation: ${validation.errors.join("; ")}. Falling back to seed.`,
+      );
+      return SEED_GENOTYPE;
+    }
+    return parsed as Genotype;
+  } catch {
+    return SEED_GENOTYPE;
+  }
+}
+
+/** Get the generation number for a genotype from evo.db (0 if not found). */
+function getGeneration(genotypeId: string): number {
+  try {
+    const raw = dbQuery(
+      `SELECT generation FROM genotypes WHERE id="${genotypeId}" LIMIT 1`,
+    );
+    return raw ? parseInt(raw, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Insert a new genotype into evo.db after mutation. */
+function saveGenotype(genotype: Genotype, parentGeneration: number): void {
+  const yaml = JSON.stringify(genotype).replace(/"/g, '""');
+  const now = new Date().toISOString();
+  const gen = parentGeneration + 1;
+  dbExec(
+    `INSERT OR IGNORE INTO genotypes (id, parent_id, yaml, created_at, status, generation) VALUES ("${genotype.id}", "${genotype.parent_id}", "${yaml}", "${now}", "active", ${gen})`,
+  );
+}
+
+/** Insert an evaluation record and return the rowid. */
+function saveEvaluation(
+  score: ScoreResult,
+  costUsd: number,
+  durationSec: number,
+): number | null {
+  const now = new Date().toISOString();
+  const scoresJson = score.scores
+    ? JSON.stringify(score.scores).replace(/"/g, '""')
+    : "{}";
+  const gatesPassed = score.gates_passed ? 1 : 0;
+  try {
+    dbExec(
+      `INSERT INTO evaluations (genotype_id, task_id, stage, scores, utility, gates_passed, cost_usd, duration_sec, created_at) VALUES ("${score.genotype_id}", "${score.task_id}", "${score.stage}", "${scoresJson}", ${score.utility}, ${gatesPassed}, ${costUsd}, ${durationSec}, "${now}")`,
+    );
+    const rowid = dbQuery("SELECT last_insert_rowid()");
+    return rowid ? parseInt(rowid, 10) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Record a shadow run start. */
+function recordShadowRunStart(
+  runId: string,
+  repo: string,
+  archetype: string,
+  budgetCap: number,
+  taskCount: number,
+  crewCount: number,
+): void {
+  const now = new Date().toISOString();
+  dbExec(
+    `INSERT OR IGNORE INTO shadow_runs (id, repo, archetype, started_at, budget_cap, task_count, crew_count, status) VALUES ("${runId}", "${repo}", "${archetype}", "${now}", ${budgetCap}, ${taskCount}, ${crewCount}, "running")`,
+  );
+}
+
+/** Update a shadow run on completion. */
+function recordShadowRunEnd(
+  runId: string,
+  status: string,
+  actualCost: number,
+): void {
+  const now = new Date().toISOString();
+  dbExec(
+    `UPDATE shadow_runs SET status="${status}", actual_cost=${actualCost}, completed_at="${now}" WHERE id="${runId}"`,
+  );
+}
+
+/** Record a shadow attempt for a crew+task pair. */
+function recordShadowAttempt(
+  runId: string,
+  genotypeId: string,
+  task: Task,
+  worktreePath: string,
+  attempt: AttemptResult,
+  evaluationId: number | null,
+): void {
+  const now = new Date().toISOString();
+  const completedAt = new Date().toISOString();
+  const status = attempt.agent_success ? "completed" : "failed";
+  const evalIdVal = evaluationId !== null ? String(evaluationId) : "NULL";
+  const descEscaped = task.description.replace(/"/g, '""');
+  dbExec(
+    `INSERT INTO shadow_attempts (run_id, genotype_id, task_hash, task_desc, worktree_path, evaluation_id, cost_usd, duration_sec, created_at, completed_at, status) VALUES ("${runId}", "${genotypeId}", "${task.hash}", "${descEscaped}", "${worktreePath}", ${evalIdVal}, ${attempt.cost_usd}, ${attempt.duration_sec}, "${now}", "${completedAt}", "${status}")`,
+  );
 }
 
 function buildCrewConfigs(
