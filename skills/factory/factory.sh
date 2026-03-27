@@ -20,9 +20,15 @@ shift || true
 
 case "$COMMAND" in
   run)
+    if [ ! -f "$FACTORY_ROOT/factory.yaml" ]; then
+      echo "No factory.yaml found — using auto-detected defaults." >&2
+    fi
     node "$FACTORY_ROOT/dist/orchestrator/cli.js" run "$@"
     ;;
   variance-check)
+    if [ ! -f "$FACTORY_ROOT/factory.yaml" ]; then
+      echo "No factory.yaml found — using auto-detected defaults." >&2
+    fi
     node "$FACTORY_ROOT/dist/orchestrator/cli.js" variance-check "$@"
     ;;
   help|--help|-h)

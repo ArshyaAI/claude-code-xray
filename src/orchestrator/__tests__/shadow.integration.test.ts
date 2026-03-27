@@ -277,6 +277,78 @@ describe("Shadow League integration", () => {
   });
 });
 
+describe("Zero-config experience", () => {
+  it("dry run works with only PROGRAM.md and package.json (no factory.yaml)", async () => {
+    const repoDir = join(TEST_ROOT, `repo-zeroconfig-${Date.now()}`);
+    mkdirSync(repoDir, { recursive: true });
+    try {
+      // Only PROGRAM.md and package.json — no factory.yaml
+      writeFileSync(join(repoDir, "PROGRAM.md"), generateProgramMd(8), "utf-8");
+      writeFileSync(
+        join(repoDir, "package.json"),
+        '{"name": "test-repo", "version": "1.0.0"}',
+        "utf-8",
+      );
+      initGitRepo(repoDir);
+
+      const result = await runShadowLeague({ repo: repoDir, dryRun: true });
+
+      assert.equal(result.status, "completed");
+      assert.equal(result.crews.length, 0, "dry run should have no crews");
+      assert.equal(result.total_cost_usd, 0);
+      assert.ok(
+        result.run_id.startsWith("run-"),
+        "run_id should start with run-",
+      );
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to TASKS.md when PROGRAM.md is missing", async () => {
+    const repoDir = join(TEST_ROOT, `repo-tasksmd-${Date.now()}`);
+    mkdirSync(repoDir, { recursive: true });
+    try {
+      // TASKS.md instead of PROGRAM.md, no factory.yaml
+      writeFileSync(join(repoDir, "TASKS.md"), generateProgramMd(8), "utf-8");
+      writeFileSync(
+        join(repoDir, "package.json"),
+        '{"name": "test-repo", "version": "1.0.0"}',
+        "utf-8",
+      );
+      initGitRepo(repoDir);
+
+      const result = await runShadowLeague({ repo: repoDir, dryRun: true });
+
+      assert.equal(result.status, "completed");
+      assert.equal(result.total_cost_usd, 0);
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true });
+    }
+  });
+
+  it("shows helpful error when neither PROGRAM.md nor TASKS.md exists", async () => {
+    const repoDir = join(TEST_ROOT, `repo-notasks-${Date.now()}`);
+    mkdirSync(repoDir, { recursive: true });
+    try {
+      writeFileSync(
+        join(repoDir, "package.json"),
+        '{"name": "test-repo", "version": "1.0.0"}',
+        "utf-8",
+      );
+      initGitRepo(repoDir);
+
+      await assert.rejects(
+        () => runShadowLeague({ repo: repoDir, dryRun: true }),
+        /No PROGRAM\.md found\. Create one with checkbox items/,
+        "should show helpful error about creating PROGRAM.md",
+      );
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("Shadow League edge cases", () => {
   it("empty PROGRAM.md throws error", async () => {
     const repoDir = join(TEST_ROOT, `repo-empty-${Date.now()}`);

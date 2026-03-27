@@ -16,6 +16,23 @@ The dry run estimates cost without executing. When you're ready:
 node dist/orchestrator/cli.js run --repo /path/to/your/repo
 ```
 
+### Minimum Setup (Zero Config)
+
+`factory.yaml` is optional. The only requirement is a `PROGRAM.md` with checkbox tasks:
+
+```bash
+# In your target repo — no factory.yaml needed
+cat > PROGRAM.md << 'EOF'
+- [ ] Add retry logic to the API client
+- [ ] Fix race condition in queue processor
+EOF
+
+# Run from the continuous-factory directory
+node dist/orchestrator/cli.js run --dry-run --repo /path/to/your/repo
+```
+
+The archetype is auto-detected from project files (package.json, Cargo.toml, go.mod, etc.).
+
 ## What It Does
 
 Shadow League spawns a **champion** crew (your current best config) and a **mutant** crew (one parameter changed) on the same tasks from your `PROGRAM.md`. Both crews run in isolated git worktrees against your real codebase.
@@ -42,10 +59,10 @@ If the mutant wins a one-sided sign test (p < 0.05, non-inferior on all 7 dims),
 
 ## Configuration
 
-Create `factory.yaml` in your repo root:
+`factory.yaml` is optional — the archetype is auto-detected from project files. Create one to override defaults:
 
 ```yaml
-# Required: declares your repo type for archetype-specific scoring
+# Optional: override auto-detected archetype
 archetype: ts-lib # nextjs-app | ts-lib | react-app | rust-cli | go-service | python-app
 
 # Optional (defaults shown)

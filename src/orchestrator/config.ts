@@ -80,6 +80,9 @@ export function loadConfig(repoRoot: string): ConfigValidation {
 
   if (!existsSync(configPath)) {
     const detected = detectArchetype(repoRoot);
+    console.log(
+      `No factory.yaml found. Using auto-detected archetype: ${detected.archetype}`,
+    );
     return {
       valid: true,
       errors: [],

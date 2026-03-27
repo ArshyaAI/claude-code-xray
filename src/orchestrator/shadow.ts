@@ -168,8 +168,19 @@ export async function runShadowLeague(
   }
   const config = configResult.config;
 
-  // Parse tasks
-  const taskSource = join(repoRoot, config.task_source);
+  // Parse tasks — try configured source, fall back to TASKS.md
+  let taskSource = join(repoRoot, config.task_source);
+  if (!existsSync(taskSource) && config.task_source === "PROGRAM.md") {
+    const fallback = join(repoRoot, "TASKS.md");
+    if (existsSync(fallback)) {
+      console.log("No PROGRAM.md found. Falling back to TASKS.md.");
+      taskSource = fallback;
+    } else {
+      throw new Error(
+        "No PROGRAM.md found. Create one with checkbox items (- [ ] task description) to define work for the Shadow League.",
+      );
+    }
+  }
   const parseResult = parseTasks(taskSource);
   const allTasks = parseResult.tasks;
 
