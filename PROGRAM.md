@@ -19,15 +19,15 @@
   - Add mutation description in plain English ("swapped builder model from Sonnet to Opus")
   - Show which dimension improved/regressed most
   - Add cost breakdown per crew
-- [ ] Add factory adopt command for importing crew configs
+- [x] Add factory adopt command for importing crew configs
   - Read a genotype from JSON/YAML and insert into local evo.db
   - Validate genotype schema before importing
   - Show diff against current champion
-- [ ] Implement per-dimension Pareto dominance test (Phase 2 statistical upgrade)
+- [x] Implement per-dimension Pareto dominance test (Phase 2 statistical upgrade)
   - Requires 20+ tasks for adequate power
   - Add --full-pareto flag that runs extended comparison
   - Fall back to aggregate sign test when N < 20
-- [ ] Add mutation testing score collection via stryker/cargo-mutants
+- [x] Add mutation testing score collection via stryker/cargo-mutants
   - Run mutation testing framework after agent completes
   - Parse mutation score from output
   - Replace the hardcoded 0.5 default in EvalMetrics
