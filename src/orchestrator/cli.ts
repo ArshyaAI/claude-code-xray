@@ -14,6 +14,7 @@ import {
 import type { ParetoDimensions } from "../evaluator/score.js";
 import { printLineage } from "./lineage.js";
 import { showHistory } from "./history.js";
+import { adopt } from "./adopt.js";
 import {
   describeMutation,
   describeScoreComparison,
@@ -25,9 +26,11 @@ import {
 function parseArgs(argv: string[]): {
   command: string;
   options: Partial<ShadowRunOptions>;
+  from: string | undefined;
 } {
   const command = argv[0] ?? "help";
   const options: Partial<ShadowRunOptions> = {};
+  let from: string | undefined;
 
   let i = 1;
   while (i < argv.length) {
@@ -60,6 +63,9 @@ function parseArgs(argv: string[]): {
       case "--full-pareto":
         options.fullPareto = true;
         break;
+      case "--from":
+        from = argv[++i];
+        break;
       default:
         console.error(`Unknown option: ${arg}`);
         process.exit(1);
@@ -67,7 +73,7 @@ function parseArgs(argv: string[]): {
     i++;
   }
 
-  return { command, options };
+  return { command, options, from };
 }
 
 // ─── ANSI helpers ────────────────────────────────────────────────────────────
@@ -238,7 +244,7 @@ function formatDuration(sec: number): string {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const { command, options } = parseArgs(process.argv.slice(2));
+  const { command, options, from } = parseArgs(process.argv.slice(2));
 
   switch (command) {
     case "run": {
@@ -329,6 +335,16 @@ async function main(): Promise<void> {
 
     case "history": {
       showHistory();
+      process.exit(0);
+      break;
+    }
+
+    case "adopt": {
+      if (!from) {
+        console.error("Usage: factory adopt --from <genotype.json>");
+        process.exit(1);
+      }
+      adopt(from);
       process.exit(0);
       break;
     }
