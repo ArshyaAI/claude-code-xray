@@ -149,12 +149,13 @@ export function runTaskWithCrew(
 
   const startTime = Date.now();
   let agentSuccess = false;
+  let agentOutput = "";
 
   try {
     // Spawn Claude Code agent with --prompt-file (safe from shell injection)
     const timeoutMs = options.task_timeout_sec * 1000;
-    execSync(
-      `claude --prompt-file NIGHT-TASK.md --dangerously-skip-permissions`,
+    const result = execSync(
+      `claude --prompt-file NIGHT-TASK.md --dangerously-skip-permissions --output-format json 2>/dev/null`,
       {
         cwd: worktreePath,
         timeout: timeoutMs,
@@ -162,9 +163,15 @@ export function runTaskWithCrew(
         encoding: "utf-8" as BufferEncoding,
       },
     );
+    agentOutput = typeof result === "string" ? result : "";
     agentSuccess = true;
   } catch (e: unknown) {
-    const err = e as { killed?: boolean; code?: string | number };
+    const err = e as {
+      killed?: boolean;
+      code?: string | number;
+      stdout?: string;
+    };
+    agentOutput = err.stdout ?? "";
     // timeout kills the process — err.killed will be true
     if (err.killed) {
       // Timeout — agent took too long
@@ -181,7 +188,7 @@ export function runTaskWithCrew(
   const ciResults = collectCiResults(worktreePath);
   const reviewScore = collectReviewScore(worktreePath);
   const criticalFindings = collectSecurityFindings(worktreePath);
-  const costUsd = collectCostEstimate(worktreePath, durationSec);
+  const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
   const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
   const metrics = defaultMetrics({
@@ -283,13 +290,38 @@ function collectSecurityFindings(worktreePath: string): number {
   }
 }
 
-function collectCostEstimate(
-  _worktreePath: string,
-  durationSec: number,
-): number {
-  // Phase 1: estimate cost from duration (rough heuristic)
-  // Claude Sonnet ~$3/MTok input + $15/MTok output, ~1K tok/min avg
-  // Rough estimate: $0.02/min for Sonnet
+/**
+ * Parse cost from Claude Code JSON output.
+ * Claude Code with --output-format json may include a cost_usd field
+ * or a usage summary. Falls back to duration-based estimate.
+ */
+function parseCostFromOutput(agentOutput: string, durationSec: number): number {
+  // Try to parse JSON output from Claude Code
+  try {
+    // Claude Code JSON output may contain cost info
+    const parsed = JSON.parse(agentOutput) as {
+      cost_usd?: number;
+      usage?: { cost_usd?: number };
+      total_cost_usd?: number;
+    };
+    if (typeof parsed.cost_usd === "number") return parsed.cost_usd;
+    if (typeof parsed.usage?.cost_usd === "number")
+      return parsed.usage.cost_usd;
+    if (typeof parsed.total_cost_usd === "number") return parsed.total_cost_usd;
+  } catch {
+    // Not valid JSON — try regex patterns
+  }
+
+  // Try to find cost in text output (e.g., "Total cost: $1.23")
+  const costMatch = agentOutput.match(
+    /(?:total[_ ]?cost|cost)[:\s]*\$?([\d.]+)/i,
+  );
+  if (costMatch?.[1]) {
+    const cost = parseFloat(costMatch[1]);
+    if (!isNaN(cost)) return cost;
+  }
+
+  // Fallback: duration-based estimate ($0.02/min for Sonnet)
   const minutes = durationSec / 60;
   return Math.round(minutes * 0.02 * 100) / 100;
 }
