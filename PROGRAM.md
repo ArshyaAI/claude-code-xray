@@ -1,6 +1,6 @@
 # Factory Work Items — Phase 2
 
-- [ ] Add auto-detection of repo archetype from package.json/Cargo.toml/go.mod
+- [x] Add auto-detection of repo archetype from package.json/Cargo.toml/go.mod
   - Remove the manual `archetype` requirement in factory.yaml
   - Detect from lockfiles and config: package.json with next → nextjs-app, Cargo.toml → rust-cli, go.mod → go-service
   - Fall back to factory.yaml if auto-detection is ambiguous
@@ -12,7 +12,7 @@
   - Query shadow_runs + evaluations for time-series data
   - Show utility trend, cost trend, promotion rate
   - Output as ASCII sparkline chart
-- [ ] Add zero-config experience: factory run works without factory.yaml
+- [x] Add zero-config experience: factory run works without factory.yaml
   - Auto-detect archetype, use defaults for everything else
   - Only require PROGRAM.md with checkbox items
 - [ ] Improve terminal output narratives for Shadow League results
