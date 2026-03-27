@@ -13,6 +13,7 @@ import {
 } from "./shadow.js";
 import type { ParetoDimensions } from "../evaluator/score.js";
 import { printLineage } from "./lineage.js";
+import { showHistory } from "./history.js";
 
 // ─── Argument parsing ────────────────────────────────────────────────────────
 
@@ -265,6 +266,12 @@ async function main(): Promise<void> {
 
     case "lineage": {
       printLineage();
+      process.exit(0);
+      break;
+    }
+
+    case "history": {
+      showHistory();
       process.exit(0);
       break;
     }
