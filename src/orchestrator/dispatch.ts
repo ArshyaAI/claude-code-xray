@@ -29,6 +29,7 @@ import { collectComplexity } from "./complexity.js";
 import { collectMutationScore } from "./mutation-testing.js";
 import { collectDiffHunkCoverage } from "./coverage.js";
 import { collectConventionViolations } from "./conventions.js";
+import { collectDocCoverage } from "./doc-coverage.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -214,6 +215,7 @@ export function runTaskWithCrew(
   const complexity = collectComplexity(worktreePath);
   const diffCoverage = collectDiffHunkCoverage(worktreePath);
   const conventions = collectConventionViolations(worktreePath);
+  const docCoverage = collectDocCoverage(worktreePath);
   const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
   const archetypeDefaults = getArchetypeDefaults(options.archetype);
   const metrics = defaultMetrics({
@@ -229,6 +231,7 @@ export function runTaskWithCrew(
     kloc: 1.0,
     throughput_max: archetypeDefaults.throughput_max,
     mutation_score: mutationScore,
+    doc_coverage: docCoverage,
   });
 
   return {
@@ -313,6 +316,7 @@ export function runTaskWithCrewAsync(
 
       const mutationScore = collectMutationScore(worktreePath);
       const complexity = collectComplexity(worktreePath);
+      const docCoverage = collectDocCoverage(worktreePath);
       const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
       const metrics = defaultMetrics({
         lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
@@ -326,6 +330,7 @@ export function runTaskWithCrewAsync(
         throughput_max: 10.0,
         mutation_score: mutationScore,
         cyclomatic_complexity: complexity,
+        doc_coverage: docCoverage,
       });
 
       resolve({
@@ -352,6 +357,7 @@ export function runTaskWithCrewAsync(
 
       const mutationScore = collectMutationScore(worktreePath);
       const complexity = collectComplexity(worktreePath);
+      const docCoverage = collectDocCoverage(worktreePath);
       const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
       const metrics = defaultMetrics({
         lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
@@ -365,6 +371,7 @@ export function runTaskWithCrewAsync(
         throughput_max: 10.0,
         mutation_score: mutationScore,
         cyclomatic_complexity: complexity,
+        doc_coverage: docCoverage,
       });
 
       resolve({
