@@ -1,28 +1,33 @@
-# Factory Work Items
+# Factory Work Items — Phase 2
 
-- [x] Add DB integration for shadow.ts to load/save champion from evo.db
-  - Query genotypes table for status='champion'
-  - Insert new genotypes after mutation
-  - Record evaluations with stage='shadow'
-- [x] Implement cost parsing from Claude Code API usage output
-  - Parse the JSON cost summary that claude outputs on exit
-  - Fall back to duration-based estimate if parsing fails
-- [x] Add terminal leaderboard output with colored rankings
-  - Use ANSI colors for crew rankings
-  - Show per-dimension scores in compact table
-- [x] Wire up factory.yaml archetype to score normalization
-  - Different archetypes have different throughput ceilings
-  - Load archetype-specific defaults
-- [x] Add --parallel flag implementation in dispatch.ts
-  - Use child_process.spawn instead of execSync
-  - Track concurrent API connections against rate limits
-- [x] Implement shadow_runs and shadow_attempts DB recording
-  - Insert shadow_run at start, update on completion
-  - Insert shadow_attempt per crew per task
-- [x] Add SIGTERM handler for graceful shutdown
-  - Kill child agent processes
-  - Record partial scores
-  - Clean up worktrees
-- [x] Write integration test with mock Claude agent
-  - Create stub script that writes a file and exits 0
-  - Verify full pipeline from PROGRAM.md to promotion decision
+- [ ] Add auto-detection of repo archetype from package.json/Cargo.toml/go.mod
+  - Remove the manual `archetype` requirement in factory.yaml
+  - Detect from lockfiles and config: package.json with next → nextjs-app, Cargo.toml → rust-cli, go.mod → go-service
+  - Fall back to factory.yaml if auto-detection is ambiguous
+- [ ] Add lineage visualization showing mutation history as ASCII tree
+  - Query genotypes table for parent_id chain
+  - Render as tree: gen-0000 → gen-0001 (swap_model) → gen-0002 (tweak_cadence)
+  - Include utility score at each node
+- [ ] Add factory history command showing trend lines across runs
+  - Query shadow_runs + evaluations for time-series data
+  - Show utility trend, cost trend, promotion rate
+  - Output as ASCII sparkline chart
+- [ ] Add zero-config experience: factory run works without factory.yaml
+  - Auto-detect archetype, use defaults for everything else
+  - Only require PROGRAM.md with checkbox items
+- [ ] Improve terminal output narratives for Shadow League results
+  - Add mutation description in plain English ("swapped builder model from Sonnet to Opus")
+  - Show which dimension improved/regressed most
+  - Add cost breakdown per crew
+- [ ] Add factory adopt command for importing crew configs
+  - Read a genotype from JSON/YAML and insert into local evo.db
+  - Validate genotype schema before importing
+  - Show diff against current champion
+- [ ] Implement per-dimension Pareto dominance test (Phase 2 statistical upgrade)
+  - Requires 20+ tasks for adequate power
+  - Add --full-pareto flag that runs extended comparison
+  - Fall back to aggregate sign test when N < 20
+- [ ] Add mutation testing score collection via stryker/cargo-mutants
+  - Run mutation testing framework after agent completes
+  - Parse mutation score from output
+  - Replace the hardcoded 0.5 default in EvalMetrics
