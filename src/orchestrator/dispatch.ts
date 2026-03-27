@@ -19,6 +19,7 @@ import {
   budgetMetricsFromGenotype,
 } from "../evaluator/score.js";
 import { getArchetypeDefaults } from "./archetypes.js";
+import { collectMutationScore } from "./mutation-testing.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -200,6 +201,7 @@ export function runTaskWithCrew(
   const criticalFindings = collectSecurityFindings(worktreePath);
   const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
+  const mutationScore = collectMutationScore(worktreePath);
   const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
   const archetypeDefaults = getArchetypeDefaults(options.archetype);
   const metrics = defaultMetrics({
@@ -212,6 +214,7 @@ export function runTaskWithCrew(
     convention_violations: 0,
     kloc: 1.0,
     throughput_max: archetypeDefaults.throughput_max,
+    mutation_score: mutationScore,
   });
 
   return {
@@ -294,6 +297,7 @@ export function runTaskWithCrewAsync(
       const criticalFindings = collectSecurityFindings(worktreePath);
       const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
+      const mutationScore = collectMutationScore(worktreePath);
       const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
       const metrics = defaultMetrics({
         lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
@@ -305,6 +309,7 @@ export function runTaskWithCrewAsync(
         convention_violations: 0,
         kloc: 1.0,
         throughput_max: 10.0,
+        mutation_score: mutationScore,
       });
 
       resolve({
@@ -329,6 +334,7 @@ export function runTaskWithCrewAsync(
       const reviewScore = collectReviewScore(worktreePath);
       const criticalFindings = collectSecurityFindings(worktreePath);
 
+      const mutationScore = collectMutationScore(worktreePath);
       const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
       const metrics = defaultMetrics({
         lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
@@ -340,6 +346,7 @@ export function runTaskWithCrewAsync(
         convention_violations: 0,
         kloc: 1.0,
         throughput_max: 10.0,
+        mutation_score: mutationScore,
       });
 
       resolve({
