@@ -20,6 +20,7 @@ import {
 } from "../evaluator/score.js";
 import { getArchetypeDefaults } from "./archetypes.js";
 import { collectMutationScore } from "./mutation-testing.js";
+import { collectComplexity } from "./complexity.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -202,6 +203,7 @@ export function runTaskWithCrew(
   const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
   const mutationScore = collectMutationScore(worktreePath);
+  const complexity = collectComplexity(worktreePath);
   const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
   const archetypeDefaults = getArchetypeDefaults(options.archetype);
   const metrics = defaultMetrics({
@@ -215,6 +217,7 @@ export function runTaskWithCrew(
     kloc: 1.0,
     throughput_max: archetypeDefaults.throughput_max,
     mutation_score: mutationScore,
+    cyclomatic_complexity: complexity,
   });
 
   return {
@@ -298,6 +301,7 @@ export function runTaskWithCrewAsync(
       const costUsd = parseCostFromOutput(agentOutput, durationSec);
 
       const mutationScore = collectMutationScore(worktreePath);
+      const complexity = collectComplexity(worktreePath);
       const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
       const metrics = defaultMetrics({
         lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
@@ -310,6 +314,7 @@ export function runTaskWithCrewAsync(
         kloc: 1.0,
         throughput_max: 10.0,
         mutation_score: mutationScore,
+        cyclomatic_complexity: complexity,
       });
 
       resolve({
@@ -335,6 +340,7 @@ export function runTaskWithCrewAsync(
       const criticalFindings = collectSecurityFindings(worktreePath);
 
       const mutationScore = collectMutationScore(worktreePath);
+      const complexity = collectComplexity(worktreePath);
       const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
       const metrics = defaultMetrics({
         lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
@@ -347,6 +353,7 @@ export function runTaskWithCrewAsync(
         kloc: 1.0,
         throughput_max: 10.0,
         mutation_score: mutationScore,
+        cyclomatic_complexity: complexity,
       });
 
       resolve({
