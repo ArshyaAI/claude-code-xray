@@ -633,6 +633,101 @@ function _generateLessons(
   return lines.join(" ");
 }
 
+// ─── Demotion ────────────────────────────────────────────────────────────────
+
+/**
+ * Input for checking whether a promoted genotype should be demoted.
+ * A promoted genotype regresses when its utility falls below the champion's
+ * in consecutive evaluation runs.
+ */
+export interface DemotionInput {
+  /** The genotype under evaluation for demotion. */
+  genotype_id: string;
+  /** The current champion's utility U(p). */
+  champion_utility: number;
+  /** The last N run utilities for this genotype (most recent last). */
+  candidate_utilities: number[];
+  /** Number of consecutive losses required to trigger demotion (default: 3). */
+  consecutive_threshold: number;
+}
+
+export interface DemotionResult {
+  /** Whether the genotype should be demoted. */
+  should_demote: boolean;
+  /** Number of consecutive runs where candidate U(p) < champion U(p). */
+  consecutive_losses: number;
+  /**
+   * If demoting, the genotype to restore as champion.
+   * Prefers parent_id; falls back to best frontier genotype if parent is in cemetery.
+   */
+  new_champion_id: string | null;
+  /** Evidence for the demotion decision. */
+  evidence: {
+    runs: number[];
+    champion_u: number;
+    candidate_u: number[];
+  };
+}
+
+/**
+ * Check whether a promoted genotype should be demoted due to regression.
+ *
+ * A genotype is demoted when its utility U(p) falls below the champion's
+ * in `consecutive_threshold` consecutive evaluation runs. On demotion:
+ *   1. Set genotype status to 'cemetery' with cause 'regression'
+ *   2. Restore parent_id genotype as champion
+ *   3. If parent is also in cemetery, restore the best frontier genotype instead
+ *
+ * @param input - Demotion check parameters
+ * @param parent_id - The genotype's parent ID (for champion restoration)
+ * @param parent_status - The parent's current status (to check cemetery)
+ * @param best_frontier_id - The best frontier genotype ID (fallback if parent in cemetery)
+ */
+export function checkDemotion(
+  input: DemotionInput,
+  parent_id: string | null,
+  parent_status: GenotypeStatus | null,
+  best_frontier_id: string | null,
+): DemotionResult {
+  const { champion_utility, candidate_utilities, consecutive_threshold } =
+    input;
+
+  // Count consecutive losses from the most recent run backwards
+  let consecutive_losses = 0;
+  for (let i = candidate_utilities.length - 1; i >= 0; i--) {
+    const u = candidate_utilities[i];
+    if (u !== undefined && u < champion_utility) {
+      consecutive_losses++;
+    } else {
+      break;
+    }
+  }
+
+  const should_demote = consecutive_losses >= consecutive_threshold;
+
+  let new_champion_id: string | null = null;
+  if (should_demote) {
+    if (parent_id && parent_status !== "cemetery") {
+      new_champion_id = parent_id;
+    } else if (best_frontier_id) {
+      new_champion_id = best_frontier_id;
+    }
+    // If neither parent nor frontier available, new_champion_id stays null
+    // — caller must handle this (e.g., keep current champion)
+  }
+
+  return {
+    should_demote,
+    consecutive_losses,
+    new_champion_id,
+    evidence: {
+      runs: Array.from({ length: candidate_utilities.length }, (_, i) => i),
+      champion_u: champion_utility,
+      candidate_u: [...candidate_utilities],
+    },
+  };
+}
+
 // ─── Stats utilities ──────────────────────────────────────────────────────────
 
 function _mean(arr: number[]): number {
