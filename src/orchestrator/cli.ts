@@ -178,12 +178,12 @@ function formatDuration(sec: number): string {
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
-function main(): void {
+async function main(): Promise<void> {
   const { command, options } = parseArgs(process.argv.slice(2));
 
   switch (command) {
     case "run": {
-      const result = runShadowLeague(options);
+      const result = await runShadowLeague(options);
 
       printLeaderboard(result);
 
@@ -203,7 +203,7 @@ function main(): void {
         "(This measures intra-genotype noise from LLM non-determinism)\n",
       );
 
-      const result = runShadowLeague(vcOptions);
+      const result = await runShadowLeague(vcOptions);
 
       if (result.crews.length >= 2) {
         const crew1 = result.crews[0];

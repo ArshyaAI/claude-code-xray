@@ -130,7 +130,7 @@ function setupTestRepo(
  * Run shadow league with PATH overridden to use mock agent.
  * We patch process.env.PATH to prepend the mock bin dir.
  */
-function runWithMockAgent(
+async function runWithMockAgent(
   repoDir: string,
   mockBinDir: string,
   options: Parameters<typeof runShadowLeague>[0] = {},
@@ -148,10 +148,10 @@ function runWithMockAgent(
 
 describe("Shadow League integration", () => {
   // Clean up the entire test root after all tests
-  it("dry run parses config and tasks correctly", () => {
+  it("dry run parses config and tasks correctly", async () => {
     const { repoDir } = setupTestRepo(8);
     try {
-      const result = runShadowLeague({ repo: repoDir, dryRun: true });
+      const result = await runShadowLeague({ repo: repoDir, dryRun: true });
 
       assert.equal(result.status, "completed");
       assert.equal(result.crews.length, 0, "dry run should have no crews");
@@ -166,10 +166,10 @@ describe("Shadow League integration", () => {
     }
   });
 
-  it("full pipeline: 2 crews, 8 tasks, scoring, promotion", () => {
+  it("full pipeline: 2 crews, 8 tasks, scoring, promotion", async () => {
     const { repoDir, mockBinDir } = setupTestRepo(8);
     try {
-      const result = runWithMockAgent(repoDir, mockBinDir, {
+      const result = await runWithMockAgent(repoDir, mockBinDir, {
         tasks: 8,
         crews: 2,
         seed: 42, // deterministic mutation
@@ -230,10 +230,10 @@ describe("Shadow League integration", () => {
     }
   });
 
-  it("attempts have correct structure", () => {
+  it("attempts have correct structure", async () => {
     const { repoDir, mockBinDir } = setupTestRepo(8);
     try {
-      const result = runWithMockAgent(repoDir, mockBinDir, {
+      const result = await runWithMockAgent(repoDir, mockBinDir, {
         tasks: 8,
         crews: 2,
         seed: 42,
@@ -255,10 +255,10 @@ describe("Shadow League integration", () => {
     }
   });
 
-  it("aggregate_utility is computed for each crew", () => {
+  it("aggregate_utility is computed for each crew", async () => {
     const { repoDir, mockBinDir } = setupTestRepo(8);
     try {
-      const result = runWithMockAgent(repoDir, mockBinDir, {
+      const result = await runWithMockAgent(repoDir, mockBinDir, {
         tasks: 8,
         crews: 2,
         seed: 42,
@@ -278,7 +278,7 @@ describe("Shadow League integration", () => {
 });
 
 describe("Shadow League edge cases", () => {
-  it("empty PROGRAM.md throws error", () => {
+  it("empty PROGRAM.md throws error", async () => {
     const repoDir = join(TEST_ROOT, `repo-empty-${Date.now()}`);
     mkdirSync(repoDir, { recursive: true });
     try {
@@ -290,7 +290,7 @@ describe("Shadow League edge cases", () => {
       writeFactoryYaml(repoDir);
       initGitRepo(repoDir);
 
-      assert.throws(
+      await assert.rejects(
         () => runShadowLeague({ repo: repoDir }),
         /No tasks found/,
         "should throw on empty PROGRAM.md",
@@ -300,7 +300,7 @@ describe("Shadow League edge cases", () => {
     }
   });
 
-  it("fewer than 8 tasks throws error with clear message", () => {
+  it("fewer than 8 tasks throws error with clear message", async () => {
     const repoDir = join(TEST_ROOT, `repo-few-${Date.now()}`);
     mkdirSync(repoDir, { recursive: true });
     try {
@@ -309,7 +309,7 @@ describe("Shadow League edge cases", () => {
       writeFactoryYaml(repoDir);
       initGitRepo(repoDir);
 
-      assert.throws(
+      await assert.rejects(
         () => runShadowLeague({ repo: repoDir }),
         /Need 8 tasks but PROGRAM\.md only has 5/,
         "should throw with clear message about insufficient tasks",
@@ -319,7 +319,7 @@ describe("Shadow League edge cases", () => {
     }
   });
 
-  it("minimum 8 tasks requirement is enforced via options", () => {
+  it("minimum 8 tasks requirement is enforced via options", async () => {
     const repoDir = join(TEST_ROOT, `repo-min-${Date.now()}`);
     mkdirSync(repoDir, { recursive: true });
     try {
@@ -332,7 +332,7 @@ describe("Shadow League edge cases", () => {
       initGitRepo(repoDir);
 
       // Requesting fewer than 8 tasks via options should fail
-      assert.throws(
+      await assert.rejects(
         () => runShadowLeague({ repo: repoDir, tasks: 5 }),
         /Minimum 8 tasks required for sign test\. Got: 5/,
         "should enforce minimum tasks in options",
@@ -342,7 +342,7 @@ describe("Shadow League edge cases", () => {
     }
   });
 
-  it("invalid factory.yaml archetype throws error", () => {
+  it("invalid factory.yaml archetype throws error", async () => {
     const repoDir = join(TEST_ROOT, `repo-badconfig-${Date.now()}`);
     mkdirSync(repoDir, { recursive: true });
     try {
@@ -354,7 +354,7 @@ describe("Shadow League edge cases", () => {
       );
       initGitRepo(repoDir);
 
-      assert.throws(
+      await assert.rejects(
         () => runShadowLeague({ repo: repoDir }),
         /Invalid factory\.yaml/,
         "should reject invalid archetype",

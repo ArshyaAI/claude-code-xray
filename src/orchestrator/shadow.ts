@@ -32,6 +32,7 @@ import {
   createWorktree,
   removeWorktree,
   runTaskWithCrew,
+  runTaskWithCrewAsync,
 } from "./dispatch.js";
 import { parseTasks, type Task } from "./tasks.js";
 import { loadConfig, type FactoryConfig } from "./config.js";
@@ -144,9 +145,9 @@ function dbExec(sql: string): boolean {
  * 6. Aggregate utilities and run sign test
  * 7. Report results
  */
-export function runShadowLeague(
+export async function runShadowLeague(
   options: Partial<ShadowRunOptions> = {},
-): ShadowRunResult {
+): Promise<ShadowRunResult> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const repoRoot = resolve(opts.repo);
 
@@ -244,115 +245,246 @@ export function runShadowLeague(
   process.on("SIGTERM", cleanup);
   process.on("SIGINT", cleanup);
 
-  for (const crewConfig of crewConfigs) {
-    const attempts: AttemptResult[] = [];
-    const scores: ScoreResult[] = [];
-    let crewCost = 0;
+  if (opts.parallel) {
+    // ── Parallel mode: all crews run concurrently per task round ──
 
-    if (aborted) break;
-
-    // Create worktree for this crew
+    // Create ALL worktrees upfront
     const baseRef = getCurrentBranch(repoRoot);
-    const worktreePath = createWorktree(
-      repoRoot,
-      runId,
-      crewConfig.label,
-      baseRef,
-    );
-    activeWorktrees.push(worktreePath);
+    const crewWorktrees = new Map<string, string>();
+    for (const crewConfig of crewConfigs) {
+      const worktreePath = createWorktree(
+        repoRoot,
+        runId,
+        crewConfig.label,
+        baseRef,
+      );
+      crewWorktrees.set(crewConfig.label, worktreePath);
+      activeWorktrees.push(worktreePath);
+    }
+
+    // Per-crew accumulators
+    const crewAttempts = new Map<string, AttemptResult[]>();
+    const crewScores = new Map<string, ScoreResult[]>();
+    for (const c of crewConfigs) {
+      crewAttempts.set(c.label, []);
+      crewScores.set(c.label, []);
+    }
 
     try {
       for (const task of tasks) {
         if (aborted) break;
 
-        // Budget check
-        if (totalCost + crewCost > budgetCap) {
+        // Budget check before starting this round
+        if (totalCost > budgetCap) {
           console.error(
-            `Budget cap $${budgetCap} exceeded at $${totalCost + crewCost}. Stopping.`,
+            `Budget cap $${budgetCap} exceeded at $${totalCost}. Stopping.`,
           );
           break;
         }
 
-        // Run task
-        const attempt = runTaskWithCrew(
-          task,
-          crewConfig,
-          worktreePath,
-          dispatchOpts,
+        // Run all crews on this task in parallel
+        const results = await Promise.all(
+          crewConfigs.map((crewConfig) => {
+            const worktreePath = crewWorktrees.get(crewConfig.label)!;
+            return runTaskWithCrewAsync(
+              task,
+              crewConfig,
+              worktreePath,
+              dispatchOpts,
+            );
+          }),
         );
-        attempts.push(attempt);
-        crewCost += attempt.cost_usd;
 
-        // Score through gates + evaluator
-        // Build gate input — only include optional fields when defined
-        // (exactOptionalPropertyTypes forbids assigning undefined)
-        const gateInput: Parameters<typeof runAllGates>[0] = {
-          workspace_path: worktreePath,
-          min_review_score:
-            crewConfig.genotype.review_strategy.min_review_score,
-        };
-        if (attempt.review_score !== undefined) {
-          gateInput.review_score = attempt.review_score;
+        // Collect results and score
+        for (let i = 0; i < crewConfigs.length; i++) {
+          const crewConfig = crewConfigs[i]!;
+          const attempt = results[i]!;
+          const worktreePath = crewWorktrees.get(crewConfig.label)!;
+
+          crewAttempts.get(crewConfig.label)!.push(attempt);
+          totalCost += attempt.cost_usd;
+
+          const gateInput: Parameters<typeof runAllGates>[0] = {
+            workspace_path: worktreePath,
+            min_review_score:
+              crewConfig.genotype.review_strategy.min_review_score,
+          };
+          if (attempt.review_score !== undefined) {
+            gateInput.review_score = attempt.review_score;
+          }
+          if (attempt.critical_security_findings !== undefined) {
+            gateInput.critical_security_findings =
+              attempt.critical_security_findings;
+          }
+          const gateResult = runAllGates(gateInput, attempt.ci_results);
+          const gates = toHardGates(gateResult);
+          const scoreResult = evaluate({
+            genotype_id: crewConfig.genotype.id,
+            task_id: task.hash,
+            stage: "shadow",
+            gates,
+            metrics: attempt.metrics,
+          });
+
+          crewScores.get(crewConfig.label)!.push(scoreResult);
+
+          const evalId = saveEvaluation(
+            scoreResult,
+            attempt.cost_usd,
+            attempt.duration_sec,
+          );
+          recordShadowAttempt(
+            runId,
+            crewConfig.genotype.id,
+            task,
+            worktreePath,
+            attempt,
+            evalId,
+          );
         }
-        if (attempt.critical_security_findings !== undefined) {
-          gateInput.critical_security_findings =
-            attempt.critical_security_findings;
-        }
-        const gateResult = runAllGates(gateInput, attempt.ci_results);
-
-        const gates = toHardGates(gateResult);
-        const scoreResult = evaluate({
-          genotype_id: crewConfig.genotype.id,
-          task_id: task.hash,
-          stage: "shadow",
-          gates,
-          metrics: attempt.metrics,
-        });
-
-        scores.push(scoreResult);
-
-        // Persist evaluation and attempt to evo.db
-        const evalId = saveEvaluation(
-          scoreResult,
-          attempt.cost_usd,
-          attempt.duration_sec,
-        );
-        recordShadowAttempt(
-          runId,
-          crewConfig.genotype.id,
-          task,
-          worktreePath,
-          attempt,
-          evalId,
-        );
       }
     } finally {
-      // Clean up worktree
-      if (!opts.keepWorktrees) {
-        removeWorktree(repoRoot, worktreePath);
+      // Clean up all worktrees
+      for (const [, worktreePath] of crewWorktrees) {
+        if (!opts.keepWorktrees) {
+          removeWorktree(repoRoot, worktreePath);
+        }
+        const idx = activeWorktrees.indexOf(worktreePath);
+        if (idx >= 0) activeWorktrees.splice(idx, 1);
       }
-      const idx = activeWorktrees.indexOf(worktreePath);
-      if (idx >= 0) activeWorktrees.splice(idx, 1);
     }
 
-    totalCost += crewCost;
+    // Aggregate results per crew
+    for (const crewConfig of crewConfigs) {
+      const attempts = crewAttempts.get(crewConfig.label)!;
+      const scores = crewScores.get(crewConfig.label)!;
+      const utilities = scores
+        .filter((s) => s.scores !== null)
+        .map((s) => s.utility);
+      const aggregateUtility =
+        utilities.length > 0
+          ? utilities.reduce((a, b) => a + b, 0) / utilities.length
+          : 0;
 
-    // Aggregate utility
-    const utilities = scores
-      .filter((s) => s.scores !== null)
-      .map((s) => s.utility);
-    const aggregateUtility =
-      utilities.length > 0
-        ? utilities.reduce((a, b) => a + b, 0) / utilities.length
-        : 0;
+      crewResults.push({
+        label: crewConfig.label,
+        genotype_id: crewConfig.genotype.id,
+        attempts,
+        scores,
+        aggregate_utility: Math.round(aggregateUtility * 10000) / 10000,
+      });
+    }
+  } else {
+    // ── Sequential mode (original) ──
 
-    crewResults.push({
-      label: crewConfig.label,
-      genotype_id: crewConfig.genotype.id,
-      attempts,
-      scores,
-      aggregate_utility: Math.round(aggregateUtility * 10000) / 10000,
-    });
+    for (const crewConfig of crewConfigs) {
+      const attempts: AttemptResult[] = [];
+      const scores: ScoreResult[] = [];
+      let crewCost = 0;
+
+      if (aborted) break;
+
+      // Create worktree for this crew
+      const baseRef = getCurrentBranch(repoRoot);
+      const worktreePath = createWorktree(
+        repoRoot,
+        runId,
+        crewConfig.label,
+        baseRef,
+      );
+      activeWorktrees.push(worktreePath);
+
+      try {
+        for (const task of tasks) {
+          if (aborted) break;
+
+          // Budget check
+          if (totalCost + crewCost > budgetCap) {
+            console.error(
+              `Budget cap $${budgetCap} exceeded at $${totalCost + crewCost}. Stopping.`,
+            );
+            break;
+          }
+
+          // Run task
+          const attempt = runTaskWithCrew(
+            task,
+            crewConfig,
+            worktreePath,
+            dispatchOpts,
+          );
+          attempts.push(attempt);
+          crewCost += attempt.cost_usd;
+
+          // Score through gates + evaluator
+          const gateInput: Parameters<typeof runAllGates>[0] = {
+            workspace_path: worktreePath,
+            min_review_score:
+              crewConfig.genotype.review_strategy.min_review_score,
+          };
+          if (attempt.review_score !== undefined) {
+            gateInput.review_score = attempt.review_score;
+          }
+          if (attempt.critical_security_findings !== undefined) {
+            gateInput.critical_security_findings =
+              attempt.critical_security_findings;
+          }
+          const gateResult = runAllGates(gateInput, attempt.ci_results);
+
+          const gates = toHardGates(gateResult);
+          const scoreResult = evaluate({
+            genotype_id: crewConfig.genotype.id,
+            task_id: task.hash,
+            stage: "shadow",
+            gates,
+            metrics: attempt.metrics,
+          });
+
+          scores.push(scoreResult);
+
+          // Persist evaluation and attempt to evo.db
+          const evalId = saveEvaluation(
+            scoreResult,
+            attempt.cost_usd,
+            attempt.duration_sec,
+          );
+          recordShadowAttempt(
+            runId,
+            crewConfig.genotype.id,
+            task,
+            worktreePath,
+            attempt,
+            evalId,
+          );
+        }
+      } finally {
+        // Clean up worktree
+        if (!opts.keepWorktrees) {
+          removeWorktree(repoRoot, worktreePath);
+        }
+        const idx = activeWorktrees.indexOf(worktreePath);
+        if (idx >= 0) activeWorktrees.splice(idx, 1);
+      }
+
+      totalCost += crewCost;
+
+      // Aggregate utility
+      const utilities = scores
+        .filter((s) => s.scores !== null)
+        .map((s) => s.utility);
+      const aggregateUtility =
+        utilities.length > 0
+          ? utilities.reduce((a, b) => a + b, 0) / utilities.length
+          : 0;
+
+      crewResults.push({
+        label: crewConfig.label,
+        genotype_id: crewConfig.genotype.id,
+        attempts,
+        scores,
+        aggregate_utility: Math.round(aggregateUtility * 10000) / 10000,
+      });
+    }
   }
 
   const totalDuration = Math.round((Date.now() - startTime) / 1000);
