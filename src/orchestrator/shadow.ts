@@ -168,11 +168,31 @@ export function runShadowLeague(
   const crewResults: CrewResult[] = [];
   let totalCost = 0;
   const startTime = Date.now();
+  const activeWorktrees: string[] = [];
+  let aborted = false;
+
+  // SIGTERM/SIGINT handler: clean up worktrees and record partial scores
+  const cleanup = () => {
+    aborted = true;
+    console.error("\nReceived shutdown signal. Cleaning up worktrees...");
+    for (const wt of activeWorktrees) {
+      try {
+        removeWorktree(repoRoot, wt);
+        console.error(`  Removed: ${wt}`);
+      } catch {
+        console.error(`  Failed to remove: ${wt}`);
+      }
+    }
+  };
+  process.on("SIGTERM", cleanup);
+  process.on("SIGINT", cleanup);
 
   for (const crewConfig of crewConfigs) {
     const attempts: AttemptResult[] = [];
     const scores: ScoreResult[] = [];
     let crewCost = 0;
+
+    if (aborted) break;
 
     // Create worktree for this crew
     const baseRef = getCurrentBranch(repoRoot);
@@ -182,9 +202,12 @@ export function runShadowLeague(
       crewConfig.label,
       baseRef,
     );
+    activeWorktrees.push(worktreePath);
 
     try {
       for (const task of tasks) {
+        if (aborted) break;
+
         // Budget check
         if (totalCost + crewCost > budgetCap) {
           console.error(
@@ -236,6 +259,8 @@ export function runShadowLeague(
       if (!opts.keepWorktrees) {
         removeWorktree(repoRoot, worktreePath);
       }
+      const idx = activeWorktrees.indexOf(worktreePath);
+      if (idx >= 0) activeWorktrees.splice(idx, 1);
     }
 
     totalCost += crewCost;
@@ -260,9 +285,16 @@ export function runShadowLeague(
 
   const totalDuration = Math.round((Date.now() - startTime) / 1000);
 
+  // Remove signal handlers
+  process.removeListener("SIGTERM", cleanup);
+  process.removeListener("SIGINT", cleanup);
+
   // Determine status
-  const status: ShadowRunResult["status"] =
-    totalCost > budgetCap ? "budget_exceeded" : "completed";
+  const status: ShadowRunResult["status"] = aborted
+    ? "failed"
+    : totalCost > budgetCap
+      ? "budget_exceeded"
+      : "completed";
 
   // Run sign test for promotion decision
   const promotion = makePromotionDecision(crewResults);
