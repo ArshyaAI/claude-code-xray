@@ -1,0 +1,718 @@
+=== OVERNIGHT EVOLUTION ===
+Rounds: 5
+Started: Sat Mar 28 00:05:56 CET 2026
+Log: /Users/arshya/Desktop/AI.nosync/continuous-factory/overnight-20260328-000556.log
+
+--- Round 1/5 (Sat Mar 28 00:05:56 CET 2026) ---
+No factory.yaml found. Using auto-detected archetype: ts-lib
+
+[1m[36m────────────────────────────────────────────────────────────[0m
+[1m  SHADOW LEAGUE RESULTS[0m
+[36m────────────────────────────────────────────────────────────[0m
+
+  Run:      [1mrun-20260327-883[0m
+  Status:   [32mcompleted[0m
+  Cost:     $0.77
+  Duration: 41m 17s
+
+  [1mCREW RANKINGS[0m
+
+  #   Crew           Genotype   U(p)     C     R     H     Q     T     K     S    
+  [2m──────────────────────────────────────────────────────────────────────────────[0m
+  [32m[1m1st[0m [32mchampion      [0m gen-0000   [1m0.6714  [0m 0.51  0.40  0.12  1.00  1.00  0.98  1.00 
+  [2m2nd[0m [2mmutant-1      [0m gen-0001   [1m0.6710  [0m 0.51  0.40  0.12  1.00  1.00  0.97  1.00 
+    [2mAdjusted max cost per task usd from $2 to $1.75[0m
+    [2mNo significant dimension changes. Net utility: -0.0004 (champion: 0.6714, mutant: 0.6710)[0m
+
+  [33mNo promotion.[0m No valid mutant comparisons (insufficient data)
+
+  [35mChampion holds. Adjusted max cost per task usd from $2 to $1.75 didn't reach significance.[0m
+
+[36m────────────────────────────────────────────────────────────[0m
+
+
+Round 1 complete. Running lineage...
+
+[1mMUTATION LINEAGE[0m  (46 genotypes)
+
+[32m[1mgen-0000[0m (champion seed) U=— [32m★ champion[0m
+└── [2mgen-0001[0m (mutation) U=0.0000 [2m● active[0m
+[2mid: "gen-0000"[0m (champion seed) U=— 
+[2mparent_id: null[0m (champion seed) U=— 
+[2mcreated_at: "2026-03-20T00:00:00Z"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmodel_routing:[0m (champion seed) U=— 
+[2m  ceo: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  cto: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  builder: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  reviewer: "codex-xhigh"[0m (champion seed) U=— 
+[2m  qa: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  explorer: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mprompt_policy:[0m (champion seed) U=— 
+[2m  builder_system: "default-v1"[0m (champion seed) U=— 
+[2m  reviewer_system: "default-v1"[0m (champion seed) U=— 
+[2m  qa_system: "default-v1"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mtool_policy:[0m (champion seed) U=— 
+[2m  builder_tools: ["read", "edit", "bash", "glob", "grep"][0m (champion seed) U=— 
+[2m  reviewer_tools: ["read", "grep", "glob"][0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mcadence:[0m (champion seed) U=— 
+[2m  explorer_batch_interval_min: 60[0m (champion seed) U=— 
+[2m  evaluator_interval_min: 60[0m (champion seed) U=— 
+[2m  memory_curator_interval_min: 120[0m (champion seed) U=— 
+[2m  audit_interval_min: 240[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mpermissions:[0m (champion seed) U=— 
+[2m  auto_merge_safe: true[0m (champion seed) U=— 
+[2m  max_files_per_task: 5[0m (champion seed) U=— 
+[2m  max_commits_per_sprint: 30[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmemory_retrieval:[0m (champion seed) U=— 
+[2m  max_conventions_in_context: 20[0m (champion seed) U=— 
+[2m  memory_decay_days: 30[0m (champion seed) U=— 
+[2m  cross_repo_inheritance: true[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mreview_strategy:[0m (champion seed) U=— 
+[2m  require_cross_model: true[0m (champion seed) U=— 
+[2m  min_review_score: 80[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mbudget:[0m (champion seed) U=— 
+[2m  max_cost_per_task_usd: 2.00[0m (champion seed) U=— 
+[2m  max_cost_per_round_usd: 20.00[0m (champion seed) U=— 
+
+
+--- Round 2/5 (Sat Mar 28 00:47:14 CET 2026) ---
+No factory.yaml found. Using auto-detected archetype: ts-lib
+
+[1m[36m────────────────────────────────────────────────────────────[0m
+[1m  SHADOW LEAGUE RESULTS[0m
+[36m────────────────────────────────────────────────────────────[0m
+
+  Run:      [1mrun-20260327-264[0m
+  Status:   [32mcompleted[0m
+  Cost:     $11.18
+  Duration: 9h 21m
+
+  [1mCREW RANKINGS[0m
+
+  #   Crew           Genotype   U(p)     C     R     H     Q     T     K     S    
+  [2m──────────────────────────────────────────────────────────────────────────────[0m
+  [32m[1m1st[0m [32mchampion      [0m gen-0000   [1m0.6714  [0m 0.51  0.40  0.12  1.00  1.00  0.98  1.00 
+  [2m2nd[0m [2mmutant-1      [0m gen-0001   [1m0.5984  [0m 0.51  0.40  0.12  1.00  0.63  0.86  1.00 
+    [2mToggled require cross model from ON to OFF[0m
+    [2mlost -0.37 on Throughput, lost -0.11 on Cost Efficiency. Net utility: -0.0730 (champion: 0.6714, mutant: 0.5984)[0m
+
+  [33mNo promotion.[0m Champion retains title. mutant-1 sign test p=1 (need < 0.05)
+  Sign test: [31mp=1[0m (n=8)
+
+  [35mChampion holds. Toggled require cross model from ON to OFF didn't reach significance (p=1.0000).[0m
+
+[36m────────────────────────────────────────────────────────────[0m
+
+
+Round 2 complete. Running lineage...
+
+[1mMUTATION LINEAGE[0m  (46 genotypes)
+
+[32m[1mgen-0000[0m (champion seed) U=— [32m★ champion[0m
+└── [2mgen-0001[0m (mutation) U=0.5250 [2m● active[0m
+[2mid: "gen-0000"[0m (champion seed) U=— 
+[2mparent_id: null[0m (champion seed) U=— 
+[2mcreated_at: "2026-03-20T00:00:00Z"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmodel_routing:[0m (champion seed) U=— 
+[2m  ceo: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  cto: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  builder: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  reviewer: "codex-xhigh"[0m (champion seed) U=— 
+[2m  qa: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  explorer: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mprompt_policy:[0m (champion seed) U=— 
+[2m  builder_system: "default-v1"[0m (champion seed) U=— 
+[2m  reviewer_system: "default-v1"[0m (champion seed) U=— 
+[2m  qa_system: "default-v1"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mtool_policy:[0m (champion seed) U=— 
+[2m  builder_tools: ["read", "edit", "bash", "glob", "grep"][0m (champion seed) U=— 
+[2m  reviewer_tools: ["read", "grep", "glob"][0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mcadence:[0m (champion seed) U=— 
+[2m  explorer_batch_interval_min: 60[0m (champion seed) U=— 
+[2m  evaluator_interval_min: 60[0m (champion seed) U=— 
+[2m  memory_curator_interval_min: 120[0m (champion seed) U=— 
+[2m  audit_interval_min: 240[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mpermissions:[0m (champion seed) U=— 
+[2m  auto_merge_safe: true[0m (champion seed) U=— 
+[2m  max_files_per_task: 5[0m (champion seed) U=— 
+[2m  max_commits_per_sprint: 30[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmemory_retrieval:[0m (champion seed) U=— 
+[2m  max_conventions_in_context: 20[0m (champion seed) U=— 
+[2m  memory_decay_days: 30[0m (champion seed) U=— 
+[2m  cross_repo_inheritance: true[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mreview_strategy:[0m (champion seed) U=— 
+[2m  require_cross_model: true[0m (champion seed) U=— 
+[2m  min_review_score: 80[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mbudget:[0m (champion seed) U=— 
+[2m  max_cost_per_task_usd: 2.00[0m (champion seed) U=— 
+[2m  max_cost_per_round_usd: 20.00[0m (champion seed) U=— 
+
+
+--- Round 3/5 (Sat Mar 28 10:08:40 CET 2026) ---
+No factory.yaml found. Using auto-detected archetype: ts-lib
+
+[1m[36m────────────────────────────────────────────────────────────[0m
+[1m  SHADOW LEAGUE RESULTS[0m
+[36m────────────────────────────────────────────────────────────[0m
+
+  Run:      [1mrun-20260328-556[0m
+  Status:   [32mcompleted[0m
+  Cost:     $0
+  Duration: 3m 10s
+
+  [1mCREW RANKINGS[0m
+
+  #   Crew           Genotype   U(p)     C     R     H     Q     T     K     S    
+  [2m──────────────────────────────────────────────────────────────────────────────[0m
+  [32m[1m1st[0m [32mchampion      [0m gen-0000   [1m0.5250  [0m 0.51  0.40  0.12  1.00  0.00  1.00  1.00 
+  [2m2nd[0m [2mmutant-1      [0m gen-0001   [1m0.5250  [0m 0.51  0.40  0.12  1.00  0.00  1.00  1.00 
+    [2mSwapped critic model from gpt-5.3-codex to gpt-5.4[0m
+    [2mNo significant dimension changes. Net utility: +0.0000 (champion: 0.5250, mutant: 0.5250)[0m
+
+  [33mNo promotion.[0m Champion retains title. mutant-1 sign test p=1 (need < 0.05)
+  Sign test: [31mp=1[0m (n=8)
+
+  [35mChampion holds. Swapped critic model from gpt-5.3-codex to gpt-5.4 didn't reach significance (p=1.0000).[0m
+
+[36m────────────────────────────────────────────────────────────[0m
+
+
+Round 3 complete. Running lineage...
+
+[1mMUTATION LINEAGE[0m  (46 genotypes)
+
+[32m[1mgen-0000[0m (champion seed) U=— [32m★ champion[0m
+└── [2mgen-0001[0m (mutation) U=0.5250 [2m● active[0m
+[2mid: "gen-0000"[0m (champion seed) U=— 
+[2mparent_id: null[0m (champion seed) U=— 
+[2mcreated_at: "2026-03-20T00:00:00Z"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmodel_routing:[0m (champion seed) U=— 
+[2m  ceo: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  cto: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  builder: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  reviewer: "codex-xhigh"[0m (champion seed) U=— 
+[2m  qa: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  explorer: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mprompt_policy:[0m (champion seed) U=— 
+[2m  builder_system: "default-v1"[0m (champion seed) U=— 
+[2m  reviewer_system: "default-v1"[0m (champion seed) U=— 
+[2m  qa_system: "default-v1"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mtool_policy:[0m (champion seed) U=— 
+[2m  builder_tools: ["read", "edit", "bash", "glob", "grep"][0m (champion seed) U=— 
+[2m  reviewer_tools: ["read", "grep", "glob"][0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mcadence:[0m (champion seed) U=— 
+[2m  explorer_batch_interval_min: 60[0m (champion seed) U=— 
+[2m  evaluator_interval_min: 60[0m (champion seed) U=— 
+[2m  memory_curator_interval_min: 120[0m (champion seed) U=— 
+[2m  audit_interval_min: 240[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mpermissions:[0m (champion seed) U=— 
+[2m  auto_merge_safe: true[0m (champion seed) U=— 
+[2m  max_files_per_task: 5[0m (champion seed) U=— 
+[2m  max_commits_per_sprint: 30[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmemory_retrieval:[0m (champion seed) U=— 
+[2m  max_conventions_in_context: 20[0m (champion seed) U=— 
+[2m  memory_decay_days: 30[0m (champion seed) U=— 
+[2m  cross_repo_inheritance: true[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mreview_strategy:[0m (champion seed) U=— 
+[2m  require_cross_model: true[0m (champion seed) U=— 
+[2m  min_review_score: 80[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mbudget:[0m (champion seed) U=— 
+[2m  max_cost_per_task_usd: 2.00[0m (champion seed) U=— 
+[2m  max_cost_per_round_usd: 20.00[0m (champion seed) U=— 
+
+
+--- Round 4/5 (Sat Mar 28 10:11:50 CET 2026) ---
+No factory.yaml found. Using auto-detected archetype: ts-lib
+
+[1m[36m────────────────────────────────────────────────────────────[0m
+[1m  SHADOW LEAGUE RESULTS[0m
+[36m────────────────────────────────────────────────────────────[0m
+
+  Run:      [1mrun-20260328-612[0m
+  Status:   [32mcompleted[0m
+  Cost:     $0
+  Duration: 2m 40s
+
+  [1mCREW RANKINGS[0m
+
+  #   Crew           Genotype   U(p)     C     R     H     Q     T     K     S    
+  [2m──────────────────────────────────────────────────────────────────────────────[0m
+  [32m[1m1st[0m [32mchampion      [0m gen-0000   [1m0.5250  [0m 0.51  0.40  0.12  1.00  0.00  1.00  1.00 
+  [2m2nd[0m [2mmutant-1      [0m gen-0001   [1m0.5250  [0m 0.51  0.40  0.12  1.00  0.00  1.00  1.00 
+    [2mSwapped critic model from gpt-5.3-codex to claude-haiku-4-5[0m
+    [2mNo significant dimension changes. Net utility: +0.0000 (champion: 0.5250, mutant: 0.5250)[0m
+
+  [33mNo promotion.[0m Champion retains title. mutant-1 sign test p=1 (need < 0.05)
+  Sign test: [31mp=1[0m (n=8)
+
+  [35mChampion holds. Swapped critic model from gpt-5.3-codex to claude-haiku-4-5 didn't reach significance (p=1.0000).[0m
+
+[36m────────────────────────────────────────────────────────────[0m
+
+
+Round 4 complete. Running lineage...
+
+[1mMUTATION LINEAGE[0m  (46 genotypes)
+
+[32m[1mgen-0000[0m (champion seed) U=— [32m★ champion[0m
+└── [2mgen-0001[0m (mutation) U=0.5250 [2m● active[0m
+[2mid: "gen-0000"[0m (champion seed) U=— 
+[2mparent_id: null[0m (champion seed) U=— 
+[2mcreated_at: "2026-03-20T00:00:00Z"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmodel_routing:[0m (champion seed) U=— 
+[2m  ceo: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  cto: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  builder: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  reviewer: "codex-xhigh"[0m (champion seed) U=— 
+[2m  qa: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  explorer: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mprompt_policy:[0m (champion seed) U=— 
+[2m  builder_system: "default-v1"[0m (champion seed) U=— 
+[2m  reviewer_system: "default-v1"[0m (champion seed) U=— 
+[2m  qa_system: "default-v1"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mtool_policy:[0m (champion seed) U=— 
+[2m  builder_tools: ["read", "edit", "bash", "glob", "grep"][0m (champion seed) U=— 
+[2m  reviewer_tools: ["read", "grep", "glob"][0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mcadence:[0m (champion seed) U=— 
+[2m  explorer_batch_interval_min: 60[0m (champion seed) U=— 
+[2m  evaluator_interval_min: 60[0m (champion seed) U=— 
+[2m  memory_curator_interval_min: 120[0m (champion seed) U=— 
+[2m  audit_interval_min: 240[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mpermissions:[0m (champion seed) U=— 
+[2m  auto_merge_safe: true[0m (champion seed) U=— 
+[2m  max_files_per_task: 5[0m (champion seed) U=— 
+[2m  max_commits_per_sprint: 30[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmemory_retrieval:[0m (champion seed) U=— 
+[2m  max_conventions_in_context: 20[0m (champion seed) U=— 
+[2m  memory_decay_days: 30[0m (champion seed) U=— 
+[2m  cross_repo_inheritance: true[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mreview_strategy:[0m (champion seed) U=— 
+[2m  require_cross_model: true[0m (champion seed) U=— 
+[2m  min_review_score: 80[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mbudget:[0m (champion seed) U=— 
+[2m  max_cost_per_task_usd: 2.00[0m (champion seed) U=— 
+[2m  max_cost_per_round_usd: 20.00[0m (champion seed) U=— 
+
+
+--- Round 5/5 (Sat Mar 28 10:14:31 CET 2026) ---
+No factory.yaml found. Using auto-detected archetype: ts-lib
+
+[1m[36m────────────────────────────────────────────────────────────[0m
+[1m  SHADOW LEAGUE RESULTS[0m
+[36m────────────────────────────────────────────────────────────[0m
+
+  Run:      [1mrun-20260328-629[0m
+  Status:   [32mcompleted[0m
+  Cost:     $0
+  Duration: 2m 36s
+
+  [1mCREW RANKINGS[0m
+
+  #   Crew           Genotype   U(p)     C     R     H     Q     T     K     S    
+  [2m──────────────────────────────────────────────────────────────────────────────[0m
+  [32m[1m1st[0m [32mchampion      [0m gen-0000   [1m0.5250  [0m 0.51  0.40  0.12  1.00  0.00  1.00  1.00 
+  [2m2nd[0m [2mmutant-1      [0m gen-0001   [1m0.5250  [0m 0.51  0.40  0.12  1.00  0.00  1.00  1.00 
+    [2mSwapped builder system from default-v1 to default-v2[0m
+    [2mNo significant dimension changes. Net utility: +0.0000 (champion: 0.5250, mutant: 0.5250)[0m
+
+  [33mNo promotion.[0m Champion retains title. mutant-1 sign test p=1 (need < 0.05)
+  Sign test: [31mp=1[0m (n=8)
+
+  [35mChampion holds. Swapped builder system from default-v1 to default-v2 didn't reach significance (p=1.0000).[0m
+
+[36m────────────────────────────────────────────────────────────[0m
+
+
+Round 5 complete. Running lineage...
+
+[1mMUTATION LINEAGE[0m  (46 genotypes)
+
+[32m[1mgen-0000[0m (champion seed) U=— [32m★ champion[0m
+└── [2mgen-0001[0m (mutation) U=0.5250 [2m● active[0m
+[2mid: "gen-0000"[0m (champion seed) U=— 
+[2mparent_id: null[0m (champion seed) U=— 
+[2mcreated_at: "2026-03-20T00:00:00Z"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmodel_routing:[0m (champion seed) U=— 
+[2m  ceo: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  cto: "claude-opus-4-6"[0m (champion seed) U=— 
+[2m  builder: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  reviewer: "codex-xhigh"[0m (champion seed) U=— 
+[2m  qa: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m  explorer: "claude-sonnet-4-6"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mprompt_policy:[0m (champion seed) U=— 
+[2m  builder_system: "default-v1"[0m (champion seed) U=— 
+[2m  reviewer_system: "default-v1"[0m (champion seed) U=— 
+[2m  qa_system: "default-v1"[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mtool_policy:[0m (champion seed) U=— 
+[2m  builder_tools: ["read", "edit", "bash", "glob", "grep"][0m (champion seed) U=— 
+[2m  reviewer_tools: ["read", "grep", "glob"][0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mcadence:[0m (champion seed) U=— 
+[2m  explorer_batch_interval_min: 60[0m (champion seed) U=— 
+[2m  evaluator_interval_min: 60[0m (champion seed) U=— 
+[2m  memory_curator_interval_min: 120[0m (champion seed) U=— 
+[2m  audit_interval_min: 240[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mpermissions:[0m (champion seed) U=— 
+[2m  auto_merge_safe: true[0m (champion seed) U=— 
+[2m  max_files_per_task: 5[0m (champion seed) U=— 
+[2m  max_commits_per_sprint: 30[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mmemory_retrieval:[0m (champion seed) U=— 
+[2m  max_conventions_in_context: 20[0m (champion seed) U=— 
+[2m  memory_decay_days: 30[0m (champion seed) U=— 
+[2m  cross_repo_inheritance: true[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mreview_strategy:[0m (champion seed) U=— 
+[2m  require_cross_model: true[0m (champion seed) U=— 
+[2m  min_review_score: 80[0m (champion seed) U=— 
+[2m[0m (champion seed) U=— 
+[2mbudget:[0m (champion seed) U=— 
+[2m  max_cost_per_task_usd: 2.00[0m (champion seed) U=— 
+[2m  max_cost_per_round_usd: 20.00[0m (champion seed) U=— 
+
+
+=== OVERNIGHT COMPLETE ===
+Finished: Sat Mar 28 10:17:07 CET 2026
+Total rounds: 5
+[1m[36m────────────────────────────────────────────────────────────────────────────────[0m
+[1m  FACTORY HISTORY[0m
+[36m────────────────────────────────────────────────────────────────────────────────[0m
+
+[1m  Run                  Crews  Tasks  Avg U    Cost     Status           Champion[0m
+  [2m──────────────────────────────────────────────────────────────────────────────[0m
+  run-20260327-845     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-912     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-133     2      8      0.0000   $22.50   [32mcompleted              [0m —
+  run-20260327-978     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-353     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-727     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-144     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-086     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-192     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-271     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-582     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-563     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-462     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-277     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-026     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-776     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-575     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-213     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-892     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-927     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-963     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-723     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-732     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-986     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-396     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-635     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-345     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-351     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-594     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-604     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-499     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-114     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-030     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-655     2      8      0.0000   $3.26    [32mcompleted              [0m —
+  run-20260327-785     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-722     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-600     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-297     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-680     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-059     2      8      0.0000   $19.70   [32mcompleted              [0m —
+  run-20260327-270     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-820     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-597     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-953     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-207     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-817     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-248     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-620     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-097     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-779     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-306     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-260     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-770     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-382     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-547     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-471     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-588     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-992     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-859     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-930     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-024     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-039     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-768     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-815     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-142     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-961     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-169     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-087     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-950     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-962     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-934     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-404     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-233     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-832     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-803     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-440     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-960     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-695     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-589     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-537     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-450     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-043     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-205     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-938     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-267     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-939     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-005     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-637     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-379     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-657     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-539     2      8      0.0000   $16.51   [32mcompleted              [0m —
+  run-20260327-840     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-510     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-931     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-186     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-882     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-249     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-036     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-754     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-602     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-875     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-737     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-797     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-299     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-822     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-014     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-711     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-221     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-387     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-228     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-305     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-268     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-075     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-446     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-201     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-676     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-895     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-057     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-058     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-413     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-561     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-224     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-652     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-545     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-802     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-079     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-339     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-415     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-836     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-311     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-237     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-065     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-647     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-056     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-586     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-730     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-384     2      8      0.0000   $3.07    [32mcompleted              [0m —
+  run-20260327-903     2      8      0.0000   $2.74    [32mcompleted              [0m —
+  run-20260327-439     2      8      0.0000   $0.81    [32mcompleted              [0m —
+  run-20260327-281     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-455     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-069     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-982     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-301     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-392     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-147     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-119     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-437     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-998     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-857     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-549     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-555     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-771     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-907     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-164     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-672     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-461     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-064     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-558     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-122     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-429     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-503     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-191     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-018     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-410     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-375     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-525     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-388     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-683     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-474     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-254     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-981     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-985     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-405     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-661     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-421     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-995     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-448     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-516     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-521     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-313     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-319     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-505     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-622     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-453     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-828     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-603     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-798     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-898     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-825     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-457     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-115     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-759     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-336     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-438     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-522     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-487     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-358     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-911     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-577     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-883     2      8      0.0000   $0.77    [32mcompleted              [0m —
+  run-20260327-250     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-701     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-955     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-468     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-101     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-879     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-544     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-940     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-506     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-473     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-165     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-900     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-029     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-034     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-533     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-443     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-370     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-598     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-965     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-638     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-747     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-183     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-805     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-040     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-218     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-789     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-712     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-365     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-129     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-607     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-194     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-416     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-418     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-484     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-173     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-172     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-178     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-378     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-731     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-134     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-177     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-746     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-530     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-509     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-871     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-512     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-182     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-330     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-264     2      8      0.0000   $11.18   [32mcompleted              [0m —
+  run-20260327-812     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-046     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-608     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-010     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-973     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-788     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-220     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-003     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-984     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-918     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-758     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-012     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260327-350     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-979     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-510     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-439     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-104     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-367     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-204     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-938     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-297     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-672     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-001     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-100     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-121     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-702     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-534     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-145     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-659     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-743     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-464     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-863     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-329     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-836     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-002     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-754     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-459     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-568     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-277     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-779     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-556     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-612     2      8      0.0000   $0.00    [32mcompleted              [0m —
+  run-20260328-629     2      8      0.0000   $0.00    [32mcompleted              [0m —
+
+  Utility: ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ (stable)
+  Cost:    ▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▁▁▁▁▁▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▆▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ (trending down)
+
+  Promotions: 0/293 runs (0%)
+
+[36m────────────────────────────────────────────────────────────────────────────────[0m

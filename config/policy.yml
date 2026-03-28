@@ -7,7 +7,7 @@
 
 version: "1.0"
 frozen_at: "2026-03-20T00:00:00Z"
-sha256_self: "fc0cbd3286b420cf7690e8949baeeb1e3e2650543332adb814cb0bf7667cb3c9"
+sha256_self: "9be976d42172ad60e68aa4a6bb897703f3d62384c932c22dbe2bc262532ec449"
 
 # ─── Immutable Genes ──────────────────────────────────────────────────────────
 # These genes MUST NEVER appear in a mutation operator's target set.

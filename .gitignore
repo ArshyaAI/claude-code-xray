@@ -39,3 +39,4 @@ bin/rg
 # OS
 .DS_Store
 evo.db*
+.gstack/
