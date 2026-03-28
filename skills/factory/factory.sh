@@ -31,6 +31,9 @@ case "$COMMAND" in
     fi
     node "$FACTORY_ROOT/dist/orchestrator/cli.js" variance-check "$@"
     ;;
+  plan)
+    node "$FACTORY_ROOT/dist/orchestrator/cli.js" plan "$@"
+    ;;
   help|--help|-h)
     echo "factory — Shadow League Evolution Runner"
     echo ""

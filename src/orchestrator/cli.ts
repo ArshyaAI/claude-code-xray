@@ -15,6 +15,7 @@ import type { ParetoDimensions } from "../evaluator/score.js";
 import { printLineage } from "./lineage.js";
 import { showHistory } from "./history.js";
 import { adopt } from "./adopt.js";
+import { generateProgramMd } from "./planner.js";
 import {
   describeMutation,
   describeScoreComparison,
@@ -333,6 +334,23 @@ async function main(): Promise<void> {
 
     case "lineage": {
       printLineage();
+      process.exit(0);
+      break;
+    }
+
+    case "plan": {
+      const repo = options.repo ?? ".";
+      const result = generateProgramMd(repo);
+      console.log(`Generated ${result.tasks.length} tasks → ${result.path}`);
+      for (const task of result.tasks) {
+        const icon =
+          task.priority === "high"
+            ? "!"
+            : task.priority === "medium"
+              ? "~"
+              : " ";
+        console.log(`  [${icon}] ${task.description} (${task.source})`);
+      }
       process.exit(0);
       break;
     }
