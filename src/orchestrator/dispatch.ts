@@ -296,8 +296,9 @@ export function runTaskWithCrew(
 }
 
 /**
- * Async version of runTaskWithCrew using spawn + Promise.
- * Used for parallel crew execution.
+ * Async version of runTaskWithCrew.
+ * Wraps the sync crew pipeline in a Promise for parallel execution.
+ * Uses the same multi-agent pipeline (builder→reviewer→QA).
  */
 export function runTaskWithCrewAsync(
   task: Task,
@@ -305,135 +306,13 @@ export function runTaskWithCrewAsync(
   worktreePath: string,
   options: DispatchOptions,
 ): Promise<AttemptResult> {
-  const taskContent = formatTaskContent(task);
-  const nightTaskPath = join(worktreePath, "NIGHT-TASK.md");
-  writeFileSync(nightTaskPath, taskContent, "utf-8");
-
-  const startTime = Date.now();
-  const timeoutMs = options.task_timeout_sec * 1000;
-
   return new Promise<AttemptResult>((resolve) => {
-    let agentOutput = "";
-    let killed = false;
-
-    const child = spawn(
-      "claude",
-      [
-        "--prompt-file",
-        "NIGHT-TASK.md",
-        "--dangerously-skip-permissions",
-        "--output-format",
-        "json",
-      ],
-      {
-        cwd: worktreePath,
-        stdio: ["pipe", "pipe", "pipe"],
-      },
-    );
-
-    child.stdout.on("data", (data: Buffer) => {
-      agentOutput += data.toString();
-    });
-
-    // Ignore stderr
-    child.stderr.on("data", () => {});
-
-    const timer = setTimeout(() => {
-      killed = true;
-      child.kill("SIGTERM");
-      // Force kill after 5s if still alive
-      setTimeout(() => {
-        try {
-          child.kill("SIGKILL");
-        } catch {
-          // already dead
-        }
-      }, 5000);
-    }, timeoutMs);
-
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      const durationSec = Math.round((Date.now() - startTime) / 1000);
-      const agentSuccess = !killed && code === 0;
-
-      const ciResults = collectCiResults(worktreePath);
-      const reviewScore = collectReviewScore(worktreePath, agentOutput);
-      const criticalFindings = collectSecurityFindings(worktreePath);
-      const costUsd = parseCostFromOutput(agentOutput, durationSec);
-
-      const mutationScore = collectMutationScore(worktreePath);
-      const complexity = collectComplexity(worktreePath);
-      const docCoverage = collectDocCoverage(worktreePath);
-      const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
-      const metrics = defaultMetrics({
-        lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
-        items_completed: agentSuccess && ciResults.build_passed ? 1 : 0,
-        time_hours: durationSec / 3600,
-        cost_per_item_usd: costUsd,
-        budget_per_item_usd: budgetMetrics.budget_per_item_usd,
-        guardrails_passed: criticalFindings === 0,
-        convention_violations: 0,
-        kloc: 1.0,
-        throughput_max: 10.0,
-        mutation_score: mutationScore,
-        cyclomatic_complexity: complexity,
-        doc_coverage: docCoverage,
-      });
-
-      resolve({
-        task,
-        crew,
-        agent_success: agentSuccess,
-        duration_sec: durationSec,
-        cost_usd: costUsd,
-        metrics,
-        worktree_path: worktreePath,
-        ci_results: ciResults,
-        review_score: reviewScore,
-        critical_security_findings: criticalFindings,
-      });
-    });
-
-    child.on("error", () => {
-      clearTimeout(timer);
-      const durationSec = Math.round((Date.now() - startTime) / 1000);
-      const costUsd = parseCostFromOutput(agentOutput, durationSec);
-      const ciResults = collectCiResults(worktreePath);
-      const reviewScore = collectReviewScore(worktreePath, agentOutput);
-      const criticalFindings = collectSecurityFindings(worktreePath);
-
-      const mutationScore = collectMutationScore(worktreePath);
-      const complexity = collectComplexity(worktreePath);
-      const docCoverage = collectDocCoverage(worktreePath);
-      const budgetMetrics = budgetMetricsFromGenotype(crew.genotype);
-      const metrics = defaultMetrics({
-        lint_violations_weighted: ciResults.lint_passed ? 0 : 5,
-        items_completed: 0,
-        time_hours: durationSec / 3600,
-        cost_per_item_usd: costUsd,
-        budget_per_item_usd: budgetMetrics.budget_per_item_usd,
-        guardrails_passed: criticalFindings === 0,
-        convention_violations: 0,
-        kloc: 1.0,
-        throughput_max: 10.0,
-        mutation_score: mutationScore,
-        cyclomatic_complexity: complexity,
-        doc_coverage: docCoverage,
-      });
-
-      resolve({
-        task,
-        crew,
-        agent_success: false,
-        duration_sec: durationSec,
-        cost_usd: costUsd,
-        metrics,
-        worktree_path: worktreePath,
-        ci_results: ciResults,
-        review_score: reviewScore,
-        critical_security_findings: criticalFindings,
-      });
-    });
+    try {
+      const result = runTaskWithCrew(task, crew, worktreePath, options);
+      resolve(result);
+    } catch {
+      resolve(failedWorktreeResult(task, crew, "async_execution_error"));
+    }
   });
 }
 
