@@ -14,14 +14,29 @@ manifests/
 metrics/
 queue/
 programs/
-retros/
 heartbeat.log
 history.json
 background-processes.json
 settings.json
+evo.db
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Shadow League worktrees
+.worktrees/
+
+# Exports / data dumps
+paperclip-exports/
+paperclip/
 
 # Binary
 bin/rg
 
 # OS
 .DS_Store
+evo.db*
+.gstack/

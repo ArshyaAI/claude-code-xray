@@ -22,27 +22,73 @@ DeFactory is a continuously self-improving AI development company that ships cod
 
 ### Agent Roster (12 agents)
 
-| #   | Agent              | Model                | Heartbeat | Budget | Role                                    |
-| --- | ------------------ | -------------------- | --------- | ------ | --------------------------------------- |
-| 1   | CEO                | Claude Opus 4.6 auto | 2 hours   | 15%    | Strategy, hiring, unblocking, P&L       |
-| 2   | CTO                | Claude Opus 4.6 auto | 2 hours   | 10%    | Architecture judgment, tech debt        |
-| 3   | Builder-1          | Claude Sonnet 4.6    | on-demand | 12%    | Code implementation (champion lane)     |
-| 4   | Builder-2          | Claude Sonnet 4.6    | on-demand | 12%    | Code implementation (champion lane)     |
-| 5   | Explorer-1         | Claude Sonnet 4.6    | hourly    | 8%     | Mutation experiments (explorer pool)    |
-| 6   | Explorer-2         | Claude Sonnet 4.6    | hourly    | 8%     | Mutation experiments (explorer pool)    |
-| 7   | Reviewer           | Codex xhigh          | on-demand | 5%     | Cross-model adversarial review          |
-| 8   | QA                 | Claude Sonnet 4.6    | on-demand | 5%     | Real tests, integration verification    |
-| 9   | Evaluator          | Claude Sonnet 4.6    | hourly    | 5%     | Score computation, promotion decisions  |
-| 10  | Memory Curator     | Claude Opus 4.6 auto | per-round | 5%     | Convention extraction, promotion, decay |
-| 11  | Objective Auditor  | Claude Opus 4.6 auto | 4 hours   | 10%    | External-reality grounding, frame audit |
-| 12  | Research Scientist | Claude Sonnet 4.6    | daily     | 5%     | Benchmark curation, archive maintenance |
+| #   | Agent              | Adapter      | Model ID          | Effort/Reasoning | Heartbeat | Budget | Role                                    | Why this model                                       |
+| --- | ------------------ | ------------ | ----------------- | ---------------- | --------- | ------ | --------------------------------------- | ---------------------------------------------------- |
+| 1   | CEO                | claude_local | claude-opus-4-6   | max              | 2 hours   | 15%    | Strategy, hiring, unblocking, P&L       | Deepest reasoning for strategic decisions            |
+| 2   | CTO                | claude_local | claude-opus-4-6   | high             | 2 hours   | 10%    | Architecture judgment, tech debt        | Architecture needs depth, not max                    |
+| 3   | Builder-1          | claude_local | claude-sonnet-4-6 | —                | on-demand | 12%    | Code implementation (champion lane)     | Speed + quality balance for shipping code            |
+| 4   | Builder-2          | claude_local | claude-sonnet-4-6 | —                | on-demand | 12%    | Code implementation (champion lane)     | Same as Builder-1, parallel capacity                 |
+| 5   | Explorer-1         | claude_local | claude-sonnet-4-6 | —                | hourly    | 5%     | Mutation experiments (explorer pool)    | Fast + cheap for throwaway experiments               |
+| 6   | Explorer-2         | codex_local  | gpt-5.4-mini      | medium           | hourly    | 3%     | Mutation experiments (explorer pool)    | Cross-model diversity in experiments, cheapest       |
+| 7   | Reviewer           | codex_local  | gpt-5.3-codex     | xhigh            | on-demand | 5%     | Cross-model adversarial review          | Cross-model catches Claude blind spots, deep review  |
+| 8   | QA                 | claude_local | claude-sonnet-4-6 | —                | on-demand | 5%     | Real tests, integration verification    | Speed for test execution, tool use                   |
+| 9   | Evaluator          | claude_local | claude-sonnet-4-6 | —                | hourly    | 5%     | Score computation, promotion decisions  | Execution (not judgment), needs speed                |
+| 10  | Memory Curator     | claude_local | claude-opus-4-6   | high             | per-round | 5%     | Convention extraction, promotion, decay | Convention judgment requires strong reasoning        |
+| 11  | Objective Auditor  | claude_local | claude-opus-4-6   | max              | 4 hours   | 10%    | External-reality grounding, frame audit | Existential questions need deepest reasoning         |
+| 12  | Research Scientist | codex_local  | gpt-5.4           | high             | daily     | 3%     | Benchmark curation, archive maintenance | Cross-model perspective on metrics, strong reasoning |
+
+#### Board Advisors (on-demand, no heartbeat)
+
+| #   | Advisor    | Adapter      | Model ID        | Effort/Reasoning | Role                                    | Why this model                                    |
+| --- | ---------- | ------------ | --------------- | ---------------- | --------------------------------------- | ------------------------------------------------- |
+| B1  | Analyst    | codex_local  | gpt-5.4         | xhigh            | Quantitative analysis, ROI, cost trends | Best at quantitative analysis, cross-model        |
+| B2  | Critic     | codex_local  | gpt-5.3-codex   | xhigh            | Red-teams everything, finds flaws       | Adversarial by design, catches Claude blind spots |
+| B3  | Strategist | claude_local | claude-opus-4-6 | max              | Long-term thinking, paradigm shifts     | Deepest abstract reasoning                        |
+
+#### Model Routing Principles
+
+1. **Judgment → Opus max**: CEO, Objective Auditor, Strategist. These make irreversible decisions.
+2. **Judgment → Opus high**: CTO, Memory Curator. Important reasoning but not existential.
+3. **Execution → Sonnet**: Builders, QA, Evaluator. Speed matters, quality is gated by review.
+4. **Cross-model → Codex/GPT**: Reviewer, Explorer-2, Analyst, Critic, Research Scientist. Prevents groupthink from all-Claude roster.
+5. **Speed → Spark/Mini**: When near-instant iteration matters more than depth. Spark for rapid code iteration loops, Mini for cheap parallel work.
+6. **Budget → cheapest viable**: Explorer-2 on gpt-5.4-mini ($0.75/MTok). Experiments are throwaway.
+7. **Never**: route judgment roles to fast models. Never route execution roles to expensive models.
+
+#### Available Model Tiers (by use case)
+
+| Tier                   | Claude                  | OpenAI                 | Use for                                                  |
+| ---------------------- | ----------------------- | ---------------------- | -------------------------------------------------------- |
+| **Deep reasoning**     | claude-opus-4-6 (max)   | gpt-5.4 (xhigh)        | CEO, Board, Auditor — irreversible decisions             |
+| **Strong reasoning**   | claude-opus-4-6 (high)  | gpt-5.3-codex (xhigh)  | CTO, Reviewer, Memory Curator — judgment + cross-model   |
+| **Balanced execution** | claude-sonnet-4-6       | gpt-5.3-codex (medium) | Builders, QA, Evaluator — speed + quality                |
+| **Fast iteration**     | claude-sonnet-4-6 (low) | gpt-5.3-codex-spark    | Rapid code loops, instant feedback, inner-loop iteration |
+| **Cheap parallel**     | claude-haiku-4-5        | gpt-5.4-mini           | Explorers, bulk experiments, routing, classification     |
+| **Ultra-cheap**        | —                       | gpt-5.4-nano           | Scoring, filtering, high-volume low-stakes tasks         |
+
+**Key models for the CEO to know when hiring:**
+
+- `gpt-5.3-codex-spark` — Near-instant coding iteration. Pro subscription only. Best for tight build-test-fix loops where latency matters more than reasoning depth. Use for inner-loop work inside a Builder's heartbeat.
+- `gpt-5.4-mini` — $0.75/MTok input, 400k context. SOTA for its price tier. Use for Explorers, parallel experiments, or any agent that runs many cheap iterations.
+- `gpt-5.4-nano` — $0.20/MTok input. Use for scoring, classification, routing decisions where volume is high and stakes are low.
+- `claude-haiku-4-5` — $1.00/MTok input, 200k context. Fastest Claude. Use when you need Claude-family capabilities at budget pricing.
+
+#### Paperclip Adapter Config Reference
+
+| Adapter      | Effort key               | Values                             | Permission flag                            |
+| ------------ | ------------------------ | ---------------------------------- | ------------------------------------------ |
+| claude_local | effort                   | low, medium, high, max (Opus only) | dangerouslySkipPermissions: true           |
+| codex_local  | modelReasoningEffort     | minimal, low, medium, high, xhigh  | dangerouslyBypassApprovalsAndSandbox: true |
+| gemini_local | (thinking_level via API) | minimal, low, medium, high         | (varies)                                   |
+
+Full model catalog: `/Users/arshya/Arshya's Brain Network/01 CEO/model-catalog-2026-03.md`
 
 ### Budget Allocation
 
 - **Total**: $400/month (Claude Max 20x + ChatGPT Pro)
 - **Champion lane** (agents 1-4, 7-8): ~60% -- production work
-- **Evolution lane** (agents 5-6, 9, 12): ~25% -- experiments
-- **Governance** (agents 10-11): ~15% -- memory + audit
+- **Evolution lane** (agents 5-6, 9, 12): ~16% -- experiments (lean)
+- **Governance** (agents 10-11, B1-B3): ~24% -- memory + audit + board
 
 ### CEO Persona (from SOUL.md)
 
@@ -71,12 +117,18 @@ parent_id: "gen-0038"
 created_at: "2026-03-20T14:00:00Z"
 
 model_routing:
-  ceo: "claude-opus-4-6"
-  cto: "claude-opus-4-6"
-  builder: "claude-sonnet-4-6" # MUTABLE
-  reviewer: "codex-xhigh" # MUTABLE
-  qa: "claude-sonnet-4-6" # MUTABLE
-  explorer: "claude-sonnet-4-6" # MUTABLE
+  ceo: { model: "claude-opus-4-6", effort: "max" } # IMMUTABLE
+  cto: { model: "claude-opus-4-6", effort: "high" } # IMMUTABLE
+  builder: { model: "claude-sonnet-4-6" } # MUTABLE
+  reviewer: { model: "gpt-5.3-codex", reasoning: "xhigh" } # MUTABLE
+  qa: { model: "claude-sonnet-4-6" } # MUTABLE
+  explorer: { model: "claude-sonnet-4-6" } # MUTABLE
+  evaluator: { model: "claude-sonnet-4-6" } # MUTABLE
+  memory_curator: { model: "claude-opus-4-6", effort: "high" } # IMMUTABLE
+  auditor: { model: "claude-opus-4-6", effort: "max" } # IMMUTABLE
+  analyst: { model: "gpt-5.4", reasoning: "xhigh" } # MUTABLE
+  critic: { model: "gpt-5.3-codex", reasoning: "xhigh" } # MUTABLE
+  strategist: { model: "claude-opus-4-6", effort: "max" } # IMMUTABLE
 
 prompt_policy:
   builder_system: "sha256:abc123" # MUTABLE (ref to prompt file)

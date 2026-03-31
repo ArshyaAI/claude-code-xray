@@ -1,0 +1,48 @@
+# Factory Work Items — Phase 2
+
+- [x] Add auto-detection of repo archetype from package.json/Cargo.toml/go.mod
+  - Remove the manual `archetype` requirement in factory.yaml
+  - Detect from lockfiles and config: package.json with next → nextjs-app, Cargo.toml → rust-cli, go.mod → go-service
+  - Fall back to factory.yaml if auto-detection is ambiguous
+- [x] Add lineage visualization showing mutation history as ASCII tree
+  - Query genotypes table for parent_id chain
+  - Render as tree: gen-0000 → gen-0001 (swap_model) → gen-0002 (tweak_cadence)
+  - Include utility score at each node
+- [x] Add factory history command showing trend lines across runs
+  - Query shadow_runs + evaluations for time-series data
+  - Show utility trend, cost trend, promotion rate
+  - Output as ASCII sparkline chart
+- [x] Add zero-config experience: factory run works without factory.yaml
+  - Auto-detect archetype, use defaults for everything else
+  - Only require PROGRAM.md with checkbox items
+- [x] Improve terminal output narratives for Shadow League results
+  - Add mutation description in plain English ("swapped builder model from Sonnet to Opus")
+  - Show which dimension improved/regressed most
+  - Add cost breakdown per crew
+- [x] Add factory adopt command for importing crew configs
+  - Read a genotype from JSON/YAML and insert into local evo.db
+  - Validate genotype schema before importing
+  - Show diff against current champion
+- [x] Implement per-dimension Pareto dominance test (Phase 2 statistical upgrade)
+  - Requires 20+ tasks for adequate power
+  - Add --full-pareto flag that runs extended comparison
+  - Fall back to aggregate sign test when N < 20
+- [x] Add mutation testing score collection via stryker/cargo-mutants
+  - Run mutation testing framework after agent completes
+  - Parse mutation score from output
+  - Replace the hardcoded 0.5 default in EvalMetrics
+- [x] Add complexity analysis collection via madge/dependency-cruiser
+  - Parse cyclomatic complexity from output
+  - Replace the hardcoded 1.0 default in EvalMetrics
+- [x] Add diff-hunk coverage collection via c8/istanbul
+  - Run coverage on changed files only
+  - Replace the hardcoded 0.5 default in EvalMetrics
+- [x] Add convention violation detection from eslint/biome output
+  - Count rule violations as convention_violations metric
+  - Replace the hardcoded 0 default in EvalMetrics
+- [x] Add doc coverage detection from typedoc/jsdoc output
+  - Measure documentation coverage on changed exports
+  - Replace the hardcoded 0.3 default in EvalMetrics
+- [x] Wire up review score parsing from /review SCORE: line
+  - After agent runs, scan worktree for review output containing SCORE: N
+  - Pass parsed score to G_review gate instead of undefined

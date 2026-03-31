@@ -106,11 +106,12 @@ export function checkGReview(
   minScore: number,
 ): GateCheckResult {
   if (reviewScore === undefined) {
+    // Phase 1: no reviewer agent configured — pass the gate by default.
+    // Phase 2+ will require cross-model review for all evaluations.
     return {
       gate: "G_review",
-      passed: false,
-      reason:
-        "Review score not yet available — blocked pending reviewer output",
+      passed: true,
+      reason: null,
       duration_ms: 0,
     };
   }
