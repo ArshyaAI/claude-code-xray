@@ -1,186 +1,136 @@
-# continuous-factory
+# Claude Code X-Ray
 
-Self-improving AI agent orchestrator. Evolves crew configurations through Shadow League experiments.
+**See inside your Claude Code. Fix what's broken. Share what works.**
 
-## Quick Start
-
-```bash
-git clone https://github.com/ArshyaAI/continuous-factory.git && cd continuous-factory
-npm install && npm run build
-node dist/orchestrator/cli.js run --dry-run --repo .
-```
-
-The dry run estimates cost without executing. When you're ready:
+![X-Ray: 83](https://img.shields.io/badge/xray-83%2F100-brightgreen) ![TypeScript](https://img.shields.io/badge/TypeScript-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 ```bash
-node dist/orchestrator/cli.js run --repo /path/to/your/repo
+npx claude-code-xray
 ```
 
-### Minimum Setup (Zero Config)
+Claude Code has 70+ settings, 25 hook events, a 4-level instruction hierarchy, and a full permission system. Most setups use less than 5% of this surface.
 
-`factory.yaml` is optional. The only requirement is a `PROGRAM.md` with checkbox tasks:
+Real consequences of bad setups:
+
+- [Claude Code deleted a user's entire Mac home directory](https://gigazine.net/gsc_news/en/20251216-claude-code-cli-mac-deleted/) (Dec 2025)
+- [`terraform destroy` wiped a production database](https://medium.com/@glasier067/claude-code-accidentally-deleted-a-production-database-heres-what-really-happened-9135b4bb2318) (Mar 2026)
+- [CVE-2025-59536](https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/): RCE via malicious hooks in untrusted repos
+- Claude co-authored commits leak secrets at 3.2% rate (2.4x human baseline)
+
+X-Ray scans your setup, shows what's dangerous, and fixes it in one command.
+
+## What You See
+
+```
+Claude Code X-Ray ──────────────────────────────────────────
+
+  YOUR SCORE: 49/100  (4/4 dimensions scored)
+
+  Safety & Security    █████░░░░░   50/100  [!]
+  Capability           ███░░░░░░░   25/100
+  Automation           ████████░░   75/100
+  Efficiency           ████████░░   79/100
+
+┌─ WHAT YOU HAVE ────────────────────────────────────────────
+│  ✓ Permission mode: default
+│  ✓ PreToolUse safety hook: yes
+│  ✓ MCP server trust: per-server
+│  ✓ Cache hit ratio: 99%
+│
+├─ WHAT YOU'RE MISSING ──────────────────────────────────────
+│  [!] No deny rules for .env, secrets, credentials
+│  [!] sandbox.enabled is false (Bash bypasses deny rules)
+│  [ ] Coordinator Mode available but not configured
+│  [ ] 6 hook events uncovered
+│
+├─ WHAT TO DO NEXT ──────────────────────────────────────────
+│  +15-36 pts  Fix safety gaps       xray fix
+│  +12-32 pts  Fix remaining gaps    xray fix
+│
+│  Fix all: npx claude-code-xray fix
+└────────────────────────────────────────────────────────────
+```
+
+## Fix
 
 ```bash
-# In your target repo — no factory.yaml needed
-cat > PROGRAM.md << 'EOF'
-- [ ] Add retry logic to the API client
-- [ ] Fix race condition in queue processor
-EOF
-
-# Run from the continuous-factory directory
-node dist/orchestrator/cli.js run --dry-run --repo /path/to/your/repo
+npx claude-code-xray fix           # dry-run: show what would change
+npx claude-code-xray fix --apply   # apply fixes with backup + rollback
 ```
 
-The archetype is auto-detected from project files (package.json, Cargo.toml, go.mod, etc.).
-
-## What It Does
-
-Shadow League spawns a **champion** crew (your current best config) and a **mutant** crew (one parameter changed) on the same tasks from your `PROGRAM.md`. Both crews run in isolated git worktrees against your real codebase.
-
-Each task result passes through **5 hard gates** — build, test, lint, cross-model review, SAST — then scores on **7 Pareto dimensions**:
-
-| Dim   | Measures                                                          |
-| ----- | ----------------------------------------------------------------- |
-| **C** | Code quality (lint errors, complexity, doc coverage)              |
-| **R** | Test reliability (coverage delta, mutation score, hidden holdout) |
-| **H** | Human approval (Bayesian posterior)                               |
-| **Q** | Convention adherence (violations / KLOC)                          |
-| **T** | Throughput (items / hour)                                         |
-| **K** | Cost efficiency (cost vs budget)                                  |
-| **S** | Safety (guardrail pass/fail)                                      |
-
-If the mutant wins a one-sided sign test (p < 0.05, non-inferior on all 7 dims), it becomes the new champion. Your factory gets measurably better over time.
-
-## Prerequisites
-
-- **Node.js 22+**
-- **Git** with worktree support
-- **Claude Code CLI** (agents run via Claude Code)
-
-## Configuration
-
-`factory.yaml` is optional — the archetype is auto-detected from project files. Create one to override defaults:
-
-```yaml
-# Optional: override auto-detected archetype
-archetype: ts-lib # nextjs-app | ts-lib | react-app | rust-cli | go-service | python-app
-
-# Optional (defaults shown)
-max_crews: 5 # max parallel crews per run
-default_budget_usd: 50 # cost cap per run in USD
-task_source: PROGRAM.md # file containing checkbox task items
-active_roles: # which agent roles to activate
-  - builder
-  - reviewer
-  - qa
-```
-
-Tasks are read from `PROGRAM.md` as checkbox items:
-
-```markdown
-- [ ] Add retry logic to the API client
-- [ ] Fix race condition in queue processor
-- [x] Already done — skipped automatically
-```
-
-## CLI Reference
-
-### `factory run`
-
-Run a Shadow League evolution experiment.
+Fixes are conservative: dry-run by default, each change shown as a diff with a "why this is safe" explanation, automatic backup before applying, rollback on failure.
 
 ```
-node dist/orchestrator/cli.js run [options]
-
-Options:
-  --repo PATH          Repository root (default: git root)
-  --tasks N            Tasks per crew, minimum 8 (default: 8)
-  --crews N            Number of crews (default: 2)
-  --budget N           Budget cap in USD (default: from factory.yaml)
-  --parallel           Run crews concurrently
-  --dry-run            Estimate cost without executing
-  --keep-worktrees     Don't clean up worktrees after run
-  --seed N             RNG seed for reproducible mutations
+49 → 83 in 4 minutes
 ```
 
-### `factory variance-check`
+## 4 Dimensions
 
-Pre-flight noise measurement. Runs the champion twice on identical tasks and reports the coefficient of variation.
+Every check is grounded in Claude Code's actual implementation (from the [March 2026 source analysis](https://venturebeat.com/technology/claude-codes-source-code-appears-to-have-leaked-heres-what-we-know)). Each check is labeled `[VERIFIED]` (official schema/docs) or `[INFERRED]` (source analysis).
 
+| Dimension      | Weight | What It Checks                                                                             |
+| -------------- | ------ | ------------------------------------------------------------------------------------------ |
+| **Safety**     | 0.30   | Permission mode, deny rules, sandbox, MCP trust, PreToolUse hooks, Bash deny gap           |
+| **Capability** | 0.25   | Feature inventory (44 internal capabilities), settings schema validation, archetype skills |
+| **Automation** | 0.25   | Hook coverage (25 events), dead script detection, CLAUDE.md hierarchy, memory health       |
+| **Efficiency** | 0.20   | Session cache hit ratio, activity level, cost trend                                        |
+
+Skipped dimensions (no data) are excluded from the score. Weights renormalize automatically.
+
+## Badge
+
+```bash
+npx claude-code-xray badge         # markdown for README
+npx claude-code-xray badge --svg   # standalone SVG
 ```
-node dist/orchestrator/cli.js variance-check [--repo PATH] [--tasks N]
 
-Result:
-  PASS    CV < 0.10   Signal exceeds noise. Proceed.
-  CAUTION CV < 0.25   Increase to 16+ tasks per run.
-  FAIL    CV >= 0.25  Investigate temperature, prompt variance, or use 30+ tasks.
+Add to your README: ![X-Ray: 83](https://img.shields.io/badge/xray-83%2F100-brightgreen)
+
+## History
+
+```bash
+npx claude-code-xray history       # score over time
 ```
 
-Run this before your first real evolution to validate experiment design.
+## Why This Matters Now
+
+Claude Code's source revealed autonomous background agents, multi-agent orchestration, and cloud compute are coming. When these ship, your setup needs to be safe. A background agent with `bypassPermissions` can modify any file at 3am.
+
+X-Ray checks your readiness today. Fixes the gaps. Tracks your progress.
 
 ## How It Works
 
-```
-PROGRAM.md              factory.yaml             evo.db
-    │                       │                      │
-    ▼                       ▼                      ▼
-Parse tasks ──────► Load config ──────► Load champion genotype
-                                              │
-                                    ┌─────────┴─────────┐
-                                    ▼                   ▼
-                              Champion crew        Mutant crew
-                              (current best)    (one param changed)
-                                    │                   │
-                                    ▼                   ▼
-                              ┌──────────┐       ┌──────────┐
-                              │ Per task: │       │ Per task: │
-                              │ worktree  │       │ worktree  │
-                              │ → agent   │       │ → agent   │
-                              │ → 5 gates │       │ → 5 gates │
-                              │ → 7-dim   │       │ → 7-dim   │
-                              │   score   │       │   score   │
-                              └─────┬─────┘       └─────┬─────┘
-                                    │                   │
-                                    ▼                   ▼
-                              Aggregate utility   Aggregate utility
-                                    │                   │
-                                    └─────────┬─────────┘
-                                              ▼
-                                    Sign test (p < 0.05)
-                                              │
-                                    ┌─────────┴─────────┐
-                                    ▼                   ▼
-                                  PASS               FAIL
-                              Mutant promoted     Champion retained
-                              to champion          (try again)
-```
+X-Ray reads your Claude Code configuration files:
 
-**Mutation operators** (one per generation): swap model (25%), tweak cadence (20%), swap prompt (20%), adjust threshold (15%), toggle policy (10%), adjust budget (10%).
+- `~/.claude/settings.json` (user settings)
+- `.claude/settings.json` (project settings)
+- `.claude/settings.local.json` (local overrides)
+- `~/.claude.json` (MCP servers, global config)
+- `~/.claude/projects/*/` (session transcripts, usage only, never content)
+- `CLAUDE.md` files (all 4 hierarchy levels)
+- `~/.claude/skills/` (installed skills)
 
-**Promotion protocol** has 4 stages: frontier admission (sign test) → champion challenge on holdout tasks (Welch's t-test) → live shadow on production tasks → canary at 10% traffic. Each stage raises the evidence bar.
+**Privacy:** Session transcript analysis ONLY reads `message.usage` fields (token counts). Message content is never read, stored, or transmitted. X-Ray runs entirely locally. No data leaves your machine.
 
-## Architecture
+## Requirements
 
-```
-src/
-├── orchestrator/     Shadow League runner, CLI, config, task parsing, dispatch
-├── evaluator/        7-dimension Pareto scoring, 5 hard gates
-├── genotype/         Schema, 6 mutation operators
-└── promoter/         4-stage promotion protocol, sign test, Welch's t-test
-```
+- Node.js 18+
+- Claude Code CLI installed
+- Optional: `gh` CLI (for some capability checks)
 
-Supporting files:
+## Commands
 
-```
-config/
-├── policy.yml        Governance constants (frozen, board-approved)
-├── models.yaml       Model routing and capability matrix
-└── roster.yaml       Agent role definitions
-evo/                  Evolution database (SQLite), schema, migrations
-```
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
+| Command                            | What It Does                   |
+| ---------------------------------- | ------------------------------ |
+| `npx claude-code-xray`             | Scan your setup                |
+| `npx claude-code-xray fix`         | Show available fixes (dry-run) |
+| `npx claude-code-xray fix --apply` | Apply fixes with backup        |
+| `npx claude-code-xray badge`       | Generate README badge          |
+| `npx claude-code-xray badge --svg` | Generate standalone SVG badge  |
+| `npx claude-code-xray history`     | Show score history             |
+| `npx claude-code-xray --json`      | Output raw JSON                |
+| `npx claude-code-xray help`        | Show help                      |
 
 ## License
 
-Private.
+MIT
