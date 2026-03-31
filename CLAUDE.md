@@ -1,14 +1,21 @@
 # Continuous Factory
 
-## What
+## NORTH STAR GOAL
 
-Self-improving orchestration layer for gstack. Evolves agent configurations through
-Shadow League experiments (champion vs mutant crews on real tasks).
+**Build one of the most viral open source repos on GitHub — a must-install tool for
+every Claude Code / gstack user — that makes their setup scientifically, measurably
+better over time, with the community sharing what works.**
+
+Every decision must pass this test: "Does this make the tool a must-install for every
+Claude Code user?" If no, don't build it. If niche, don't build it. If it doesn't
+create network effects or viral growth, reconsider.
 
 ## Rules
 
 - **Stick to the plan.** The design doc is the source of truth. Every implementation
   decision must trace back to the approved plan. If deviating, flag it first.
+- **Don't drift.** The goal is viral must-install, not academic rigor or niche tooling.
+- **Deeply integrate with gstack.** Piggyback on gstack's network effect. Not standalone.
 - Architecture decisions require explicit approval before changes.
 
 ## Shadow League
