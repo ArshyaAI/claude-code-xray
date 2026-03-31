@@ -339,17 +339,28 @@ function checkClaudemdHierarchy(repoRoot: string): CheckResult {
 
 function checkMemoryHealth(
   settingsFiles: Record<string, unknown>[],
+  repoRoot: string,
 ): CheckResult {
   const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
 
-  // Locate MEMORY.md via glob-style search: ~/.claude/projects/-Users-*/memory/MEMORY.md
+  // Scope to current repo: derive slug from repoRoot path
+  // Claude Code uses the absolute path with / replaced by - as the project slug
+  const slug = repoRoot.replace(/^\//, "").replace(/\//g, "-");
   const projectsDir = join(home, ".claude", "projects");
   let memoryPath: string | undefined;
 
-  if (existsSync(projectsDir)) {
+  // First try exact slug match
+  const exactCandidate = join(projectsDir, slug, "memory", "MEMORY.md");
+  if (existsSync(exactCandidate)) {
+    memoryPath = exactCandidate;
+  }
+
+  // Fallback: search project dirs for one containing our repo name
+  if (!memoryPath && existsSync(projectsDir)) {
+    const repoName = repoRoot.split("/").pop() ?? "";
     try {
       const projectDirs = readdirSync(projectsDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
+        .filter((d) => d.isDirectory() && d.name.includes(repoName))
         .map((d) => d.name);
 
       for (const dir of projectDirs) {
@@ -438,7 +449,7 @@ export function scanAutomation(repoRoot: string): DimensionScore {
     checkHookCoverage(settingsFiles),
     checkDeadHookScripts(settingsFiles),
     checkClaudemdHierarchy(resolve(repoRoot)),
-    checkMemoryHealth(settingsFiles),
+    checkMemoryHealth(settingsFiles, resolve(repoRoot)),
   ];
 
   const score = calculateAutomationScore(checks);

@@ -20,6 +20,36 @@ import {
 } from "node:fs";
 import { resolve, dirname, basename } from "node:path";
 import type { Fix, XRayResult } from "../scan/types.js";
+
+/** Deep merge two objects. Arrays are concatenated and deduped. */
+function deepMerge(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    const tv = target[key];
+    const sv = source[key];
+    if (Array.isArray(tv) && Array.isArray(sv)) {
+      result[key] = [...new Set([...tv, ...sv])];
+    } else if (
+      tv &&
+      sv &&
+      typeof tv === "object" &&
+      typeof sv === "object" &&
+      !Array.isArray(tv) &&
+      !Array.isArray(sv)
+    ) {
+      result[key] = deepMerge(
+        tv as Record<string, unknown>,
+        sv as Record<string, unknown>,
+      );
+    } else {
+      result[key] = sv;
+    }
+  }
+  return result;
+}
 import { generateSafetyFixes } from "./safety-fixer.js";
 import { generateHookFixes } from "./hook-generator.js";
 
@@ -84,8 +114,21 @@ export function applyFix(fix: Fix, dryRun: boolean): void {
     console.log(`  Backed up: ${targetPath} → ${backupPath}`);
   }
 
-  // 3. Write the new content
-  const newContent = JSON.stringify(parsed, null, 2) + "\n";
+  // 3. Merge fix into CURRENT file state (not overwrite with snapshot)
+  //    This ensures multiple fixes to the same file don't clobber each other.
+  let merged: unknown;
+  if (existsSync(targetPath)) {
+    try {
+      const current = JSON.parse(readFileSync(targetPath, "utf-8"));
+      merged = deepMerge(current, parsed as Record<string, unknown>);
+    } catch {
+      merged = parsed; // fallback if current file is not valid JSON
+    }
+  } else {
+    merged = parsed;
+  }
+
+  const newContent = JSON.stringify(merged, null, 2) + "\n";
   try {
     writeFileSync(targetPath, newContent, "utf-8");
   } catch (err) {

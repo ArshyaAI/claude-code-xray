@@ -100,6 +100,7 @@ export function fixDenyRules(
 
   const diff = JSON.stringify(
     {
+      ...current,
       permissions: {
         ...permissions,
         deny: merged,

@@ -86,7 +86,7 @@ function checkDenyRules(settings: Record<string, unknown>[]): CheckResult {
     denyRules.some((rule) => rule.toLowerCase().includes(pat)),
   );
 
-  const hasDenyRules = covered.length >= 2;
+  const hasDenyRules = covered.length >= 4;
   return {
     name: "Deny rules for sensitive files",
     passed: hasDenyRules,
