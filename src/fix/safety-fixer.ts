@@ -142,23 +142,32 @@ export function fixSandboxConfig(
   );
   if (!sandboxCheck || sandboxCheck.passed) return undefined;
 
-  const targetFile = resolveSettingsTarget(repoRoot);
+  // Sandbox config should go in PROJECT settings, not user settings.
+  // Reason: allowWrite paths are project-specific. Writing to user-level
+  // settings would break other projects.
+  const projectSettings = join(repoRoot, ".claude", "settings.json");
+  const targetFile = projectSettings;
   const current = readSettingsJson(targetFile);
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
 
   const diff = JSON.stringify(
     {
       ...current,
       sandbox: {
         enabled: true,
-        allowWrite: [repoRoot, "/tmp"],
-        denyWrite: [
-          "**/.env",
-          "**/.env.*",
-          "**/secrets/**",
-          "**/*.pem",
-          "**/id_rsa",
-        ],
-        allowedDomains: ["api.anthropic.com"],
+        filesystem: {
+          allowWrite: [repoRoot, join(home, ".xray"), "/tmp"],
+          denyWrite: [
+            "**/.env",
+            "**/.env.*",
+            "**/secrets/**",
+            "**/*.pem",
+            "**/id_rsa",
+          ],
+        },
+        network: {
+          allowedDomains: ["api.anthropic.com", "img.shields.io"],
+        },
       },
     },
     null,
@@ -169,12 +178,12 @@ export function fixSandboxConfig(
     id: "safety/sandbox-config",
     dimension: "safety",
     description:
-      "Enable sandbox with OS-level filesystem and network isolation",
+      "Enable sandbox with OS-level filesystem and network isolation (project-scoped)",
     diff,
     impact_estimate: 20,
     security_relevant: true,
     why_safe:
-      "Sandbox enforcement operates at the OS level and closes the Bash subprocess gap — deny rules in permissions only apply to Claude's own Read/Edit tools, not shell commands. allowWrite is scoped to the project directory so normal development is unaffected.",
+      "Sandbox config targets PROJECT settings (.claude/settings.json), not user-level. allowWrite includes the project dir + /tmp. denyWrite blocks .env and secrets. This only affects this project.",
     target_file: targetFile,
   };
 }
