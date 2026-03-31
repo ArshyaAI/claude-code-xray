@@ -13,15 +13,29 @@
 
 import { runXRay } from "./index.js";
 import { renderResult } from "./render.js";
+import { generateFixes, applyFix } from "../fix/index.js";
+import { badgeMarkdown, badgeSvg } from "../viral/badge.js";
+import { appendHistory, readHistory, renderHistory } from "../viral/history.js";
 
-const args = process.argv.slice(2);
-const command = args[0] ?? "scan";
-const flags = new Set(args.slice(1));
+const rawArgs = process.argv.slice(2);
+const flags = new Set(rawArgs.filter((a) => a.startsWith("--")));
+const positional = rawArgs.filter((a) => !a.startsWith("--"));
+const command = positional[0] ?? "scan";
 
 switch (command) {
   case "scan":
   case undefined: {
     const result = runXRay(".");
+
+    // Track history
+    appendHistory({
+      timestamp: result.timestamp,
+      action: "scan",
+      repo: result.repo,
+      overall_score: result.overall_score,
+      dimensions_scored: result.dimensions_scored,
+    });
+
     if (flags.has("--json")) {
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -32,51 +46,67 @@ switch (command) {
 
   case "fix": {
     const dryRun = !flags.has("--apply");
+    const result = runXRay(".");
+    const fixes = generateFixes(result, ".");
+
+    if (fixes.length === 0) {
+      console.log("No fixes needed. Your setup is solid.");
+      break;
+    }
+
     console.log(
       dryRun
-        ? "Dry run (showing fixes without applying). Use --apply to execute.\n"
-        : "Applying fixes...\n",
+        ? `${fixes.length} fixes available (dry run):\n`
+        : `Applying ${fixes.length} fixes...\n`,
     );
-    // TODO: integrate fix module
-    const result = runXRay(".");
-    const fixable = Object.values(result.dimensions)
-      .flatMap((d) => d.checks)
-      .filter((c) => !c.passed && c.fix_available);
 
-    if (fixable.length === 0) {
-      console.log("No fixes needed. Your setup is solid.");
+    let applied = 0;
+    for (const fix of fixes) {
+      applyFix(fix, dryRun);
+      if (!dryRun) applied++;
+      console.log("");
+    }
+
+    if (dryRun) {
+      console.log("Run with --apply to execute these fixes.");
     } else {
-      console.log(`${fixable.length} fixes available:\n`);
-      for (const check of fixable) {
-        console.log(`  - ${check.name}`);
-        if (check.detail) console.log(`    ${check.detail}`);
-      }
-      if (dryRun) {
-        console.log("\nRun with --apply to execute these fixes.");
-      }
+      // Re-scan and show delta
+      const after = runXRay(".");
+      const delta = after.overall_score - result.overall_score;
+      console.log(
+        `\n${result.overall_score} → ${after.overall_score} ${delta > 0 ? `(+${delta})` : ""}\n`,
+      );
+      console.log(
+        `Applied ${applied} fixes. Backups saved to each file's directory.`,
+      );
+
+      appendHistory({
+        timestamp: new Date().toISOString(),
+        action: "fix",
+        repo: result.repo,
+        overall_score: after.overall_score,
+        dimensions_scored: after.dimensions_scored,
+        fixes_applied: fixes.map((f) => f.id),
+        score_delta: delta,
+      });
     }
     break;
   }
 
   case "badge": {
     const result = runXRay(".");
-    const score = result.overall_score;
-    const color = score >= 71 ? "brightgreen" : score >= 41 ? "yellow" : "red";
-    const encoded = encodeURIComponent(`${score}/100`);
-    const url = `https://img.shields.io/badge/xray-${encoded}-${color}`;
-
     if (flags.has("--svg")) {
-      console.log(`Badge URL: ${url}`);
+      console.log(badgeSvg(result.overall_score));
     } else {
-      console.log(`![X-Ray: ${score}](${url})`);
+      console.log(badgeMarkdown(result.overall_score));
+      console.log("\nAdd this to your README to show your setup score.");
     }
-    console.log("\nAdd this to your README to show your setup score.");
     break;
   }
 
   case "history": {
-    // TODO: integrate history module
-    console.log("History tracking not yet implemented. Coming in Phase 1.");
+    const entries = readHistory();
+    console.log(renderHistory(entries));
     break;
   }
 
@@ -96,6 +126,7 @@ Usage:
 Options:
   --json    Output scan results as JSON
   --apply   Apply fixes (default: dry-run)
+  --svg     Output SVG badge instead of markdown
   --help    Show this help
 `);
     break;
