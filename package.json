@@ -32,6 +32,7 @@
   },
   "files": [
     "dist/scan/**/*.js",
+    "!dist/scan/__tests__/**",
     "dist/fix/**/*.js",
     "dist/viral/**/*.js",
     "dist/orchestrator/detect-archetype.js",
