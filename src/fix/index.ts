@@ -21,7 +21,11 @@ import {
 import { resolve, dirname, basename } from "node:path";
 import type { Fix, XRayResult } from "../scan/types.js";
 
-/** Deep merge two objects. Arrays are concatenated and deduped. */
+/**
+ * Deep merge two objects. Arrays use SOURCE value (not concatenated),
+ * because fix generators already produce the complete merged array.
+ * Concatenating would duplicate every entry.
+ */
 function deepMerge(
   target: Record<string, unknown>,
   source: Record<string, unknown>,
@@ -30,9 +34,7 @@ function deepMerge(
   for (const key of Object.keys(source)) {
     const tv = target[key];
     const sv = source[key];
-    if (Array.isArray(tv) && Array.isArray(sv)) {
-      result[key] = [...new Set([...tv, ...sv])];
-    } else if (
+    if (
       tv &&
       sv &&
       typeof tv === "object" &&
@@ -45,6 +47,7 @@ function deepMerge(
         sv as Record<string, unknown>,
       );
     } else {
+      // Arrays and primitives: source wins (fix already has the correct value)
       result[key] = sv;
     }
   }
