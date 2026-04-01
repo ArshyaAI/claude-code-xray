@@ -20,7 +20,7 @@ export function computeScore(
   const weightMap: Record<string, number> = {
     "Safety & Security": weights.safety,
     Capability: weights.capability,
-    Automation: weights.automation,
+    "Automation & Workflow": weights.automation,
     Efficiency: weights.efficiency,
   };
 

@@ -1,0 +1,52 @@
+# Source (only dist/ ships)
+src/
+*.ts
+
+# Build artifacts not needed
+tsconfig.json
+*.tsbuildinfo
+
+# Internal docs
+CLAUDE-CODE-INTELLIGENCE.md
+RESEARCH-INTELLIGENCE.md
+BIBLE.md
+PROGRAM.md
+VARIANCE-TASKS.md
+ARCHITECTURE.md
+CLAUDE.md
+CHANGELOG.md
+VERSION
+
+# Repo infrastructure
+.github/
+.claude/
+.cline/
+.gstack/
+.worktrees/
+launch/
+evo/
+config/
+retros/
+scripts/
+skills/
+bin/
+docs/
+archive/
+paperclip/
+paperclip-exports/
+
+# Test files in dist
+dist/**/__tests__/
+dist/**/*.test.js
+dist/**/*.test.js.map
+dist/**/*.test.d.ts
+dist/**/*.test.d.ts.map
+
+# Runtime / data
+evo.db
+*.log
+
+# Misc
+.DS_Store
+install.sh
+run-overnight.sh

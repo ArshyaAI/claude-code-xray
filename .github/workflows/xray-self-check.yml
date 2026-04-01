@@ -1,0 +1,51 @@
+name: X-Ray Self-Check
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  self-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npx tsc
+
+      - name: Run X-Ray scan
+        id: xray
+        run: |
+          RESULT=$(node dist/scan/cli.js --json 2>/dev/null || true)
+          echo "$RESULT"
+          SCORE=$(echo "$RESULT" | node -e "
+            let buf = '';
+            process.stdin.on('data', d => buf += d);
+            process.stdin.on('end', () => {
+              try {
+                const obj = JSON.parse(buf);
+                console.log(obj.score ?? obj.overall_score ?? 'unknown');
+              } catch {
+                console.log('unknown');
+              }
+            });
+          ")
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+
+      - name: Post commit status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const score = '${{ steps.xray.outputs.score }}';
+            const state = score === 'unknown' ? 'failure' : 'success';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state,
+              description: `X-Ray score: ${score}`,
+              context: 'x-ray/self-check'
+            });

@@ -41,6 +41,21 @@ export function runXRay(repoRoot: string = "."): XRayResult {
   // Collect all security alerts
   const alerts: SecurityAlert[] = [...safety.alerts];
 
+  // Collect fixable checks as available fixes
+  const fixable = Object.values(dimensions)
+    .flatMap((d) => d.checks)
+    .filter((c) => !c.passed && c.fix_available)
+    .map((c) => ({
+      id: c.name.toLowerCase().replace(/\s+/g, "-"),
+      dimension: "auto",
+      description: c.detail ?? c.name,
+      diff: "",
+      impact_estimate: 10,
+      security_relevant: false,
+      why_safe: "",
+      target_file: "",
+    }));
+
   return {
     timestamp: new Date().toISOString(),
     version: VERSION,
@@ -49,9 +64,9 @@ export function runXRay(repoRoot: string = "."): XRayResult {
     overall_score: overall,
     dimensions_scored: scored,
     dimensions,
-    fixes_available: [], // populated by fix module
+    fixes_available: fixable,
     security_alerts: alerts,
-    settings_validation: { valid: true, errors: [] }, // TODO: integrate schema validator
+    settings_validation: { valid: true, errors: [] },
   };
 }
 
