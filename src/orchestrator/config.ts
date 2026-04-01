@@ -18,7 +18,10 @@ export type Archetype =
   | "react-app"
   | "rust-cli"
   | "go-service"
-  | "python-app";
+  | "python-app"
+  | "shopify-theme"
+  | "docker-service"
+  | "unknown";
 
 const VALID_ARCHETYPES: ReadonlySet<string> = new Set<Archetype>([
   "nextjs-app",
@@ -27,6 +30,9 @@ const VALID_ARCHETYPES: ReadonlySet<string> = new Set<Archetype>([
   "rust-cli",
   "go-service",
   "python-app",
+  "shopify-theme",
+  "docker-service",
+  "unknown",
 ]);
 
 /** Active agent roles for a Shadow League run. */
