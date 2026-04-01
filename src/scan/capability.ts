@@ -238,6 +238,93 @@ function checkCoordinatorAvailable(): CheckResult {
   };
 }
 
+// ─── Check: Project-level settings ──────────────────────────────────────────
+
+function checkProjectSettings(repoRoot: string): CheckResult {
+  const projectSettingsPath = join(repoRoot, ".claude", "settings.json");
+  const projectLocalPath = join(repoRoot, ".claude", "settings.local.json");
+  const hasProjectSettings = existsSync(projectSettingsPath);
+  const hasLocalSettings = existsSync(projectLocalPath);
+
+  const found: string[] = [];
+  if (hasProjectSettings) found.push(".claude/settings.json");
+  if (hasLocalSettings) found.push(".claude/settings.local.json");
+
+  const passed = hasProjectSettings || hasLocalSettings;
+
+  return {
+    name: "Project-level settings",
+    passed,
+    value: found.length > 0 ? found.join(", ") : "none",
+    target: ".claude/settings.json present",
+    source: `${projectSettingsPath}, ${projectLocalPath}`,
+    confidence: "verified",
+    fix_available: !passed,
+    detail: passed
+      ? undefined
+      : "No project-level settings.json. This repo inherits all config from user-level only. Add .claude/settings.json to customize permissions, hooks, or deny rules per project.",
+  };
+}
+
+// ─── Check: Project CLAUDE.md ───────────────────────────────────────────────
+
+function checkProjectClaudeMd(repoRoot: string): CheckResult {
+  const rootPath = join(repoRoot, "CLAUDE.md");
+  const dotClaudePath = join(repoRoot, ".claude", "CLAUDE.md");
+  const hasRoot = existsSync(rootPath);
+  const hasDotClaude = existsSync(dotClaudePath);
+
+  const found: string[] = [];
+  if (hasRoot) found.push("CLAUDE.md");
+  if (hasDotClaude) found.push(".claude/CLAUDE.md");
+
+  const passed = hasRoot || hasDotClaude;
+
+  return {
+    name: "Project CLAUDE.md",
+    passed,
+    value: found.length > 0 ? found.join(", ") : "none",
+    target: "CLAUDE.md at project root or .claude/",
+    source: `${rootPath}, ${dotClaudePath}`,
+    confidence: "verified",
+    fix_available: !passed,
+    detail: passed
+      ? undefined
+      : "No project-level CLAUDE.md. Claude Code has no project-specific instructions for this repo.",
+  };
+}
+
+// ─── Check: MCP servers configured ──────────────────────────────────────────
+
+function checkMcpConfig(repoRoot: string): CheckResult {
+  const mcpJsonPath = join(repoRoot, ".mcp.json");
+  const hasMcpJson = existsSync(mcpJsonPath);
+
+  let serverCount = 0;
+  if (hasMcpJson) {
+    const mcp = readJson(mcpJsonPath);
+    if (mcp) {
+      const servers = mcp["mcpServers"] as Record<string, unknown> | undefined;
+      serverCount = servers ? Object.keys(servers).length : 0;
+    }
+  }
+
+  const passed = hasMcpJson && serverCount > 0;
+
+  return {
+    name: "MCP servers configured",
+    passed,
+    value: hasMcpJson ? `${serverCount} server(s)` : "no .mcp.json",
+    target: "≥1 MCP server in .mcp.json",
+    source: mcpJsonPath,
+    confidence: "verified",
+    fix_available: false,
+    detail: passed
+      ? undefined
+      : "No project-level .mcp.json with MCP servers. Tools like database access, browser, or custom APIs are not wired up for this project.",
+  };
+}
+
 // ─── Score calculation ────────────────────────────────────────────────────────
 
 function calculateCapabilityScore(checks: CheckResult[]): number {
@@ -255,6 +342,9 @@ export function scanCapability(repoRoot: string): DimensionScore {
     checkSchemaValidity(repoRoot),
     checkArchetypeSkills(repoRoot),
     checkCoordinatorAvailable(),
+    checkProjectSettings(repoRoot),
+    checkProjectClaudeMd(repoRoot),
+    checkMcpConfig(repoRoot),
   ];
 
   const score = calculateCapabilityScore(checks);
