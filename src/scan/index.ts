@@ -13,7 +13,7 @@ import { scanEfficiency } from "./efficiency.js";
 import { computeScore } from "./scoring.js";
 import { detectArchetype } from "../orchestrator/detect-archetype.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 function tryScan<T>(name: string, fn: () => T): T | null {
   try {

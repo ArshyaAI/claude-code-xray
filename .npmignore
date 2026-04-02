@@ -35,6 +35,27 @@ archive/
 paperclip/
 paperclip-exports/
 
+# Phase 2 dead weight (only detect-archetype + config are used by scan/)
+dist/orchestrator/__tests__/
+dist/orchestrator/adopt.*
+dist/orchestrator/cli.*
+dist/orchestrator/complexity.*
+dist/orchestrator/conventions.*
+dist/orchestrator/coverage.*
+dist/orchestrator/crew-pipeline.*
+dist/orchestrator/dispatch.*
+dist/orchestrator/doc-coverage.*
+dist/orchestrator/history.*
+dist/orchestrator/lineage.*
+dist/orchestrator/mutation-testing.*
+dist/orchestrator/narrative.*
+dist/orchestrator/planner.*
+dist/orchestrator/shadow.*
+dist/orchestrator/tasks.*
+dist/evaluator/
+dist/genotype/
+dist/promoter/
+
 # Test files in dist
 dist/**/__tests__/
 dist/**/*.test.js
