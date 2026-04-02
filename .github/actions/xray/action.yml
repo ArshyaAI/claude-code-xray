@@ -1,0 +1,131 @@
+name: "Claude Code X-Ray"
+description: "Score your Claude Code setup and gate PRs on quality thresholds"
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  min-score:
+    description: "Minimum overall score to pass (0 = always pass)"
+    required: false
+    default: "0"
+  min-safety:
+    description: "Minimum safety dimension score to pass (0 = always pass)"
+    required: false
+    default: "0"
+  comment:
+    description: "Post results as a PR comment"
+    required: false
+    default: "true"
+  github-token:
+    description: "GitHub token for posting PR comments"
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  score:
+    description: "Overall X-Ray score (0-100)"
+    value: ${{ steps.xray.outputs.score }}
+  pass:
+    description: "Whether the scan passed thresholds (true/false)"
+    value: ${{ steps.xray.outputs.pass }}
+  dimensions:
+    description: "JSON object of dimension scores"
+    value: ${{ steps.xray.outputs.dimensions }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "18"
+
+    - name: Run X-Ray scan
+      id: xray
+      shell: bash
+      run: |
+        # Run the scan and capture JSON output
+        RESULT=$(npx claude-code-xray ci --min-score ${{ inputs.min-score }} --min-safety ${{ inputs.min-safety }} --json 2>/dev/null || true)
+
+        # Parse outputs from JSON
+        SCORE=$(echo "$RESULT" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')); console.log(d.score)")
+        PASS=$(echo "$RESULT" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')); console.log(d.pass)")
+        DIMS=$(echo "$RESULT" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')); console.log(JSON.stringify(d.dimensions))")
+
+        echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+        echo "pass=$PASS" >> "$GITHUB_OUTPUT"
+        echo "dimensions=$DIMS" >> "$GITHUB_OUTPUT"
+        echo "result<<XRAY_EOF" >> "$GITHUB_OUTPUT"
+        echo "$RESULT" >> "$GITHUB_OUTPUT"
+        echo "XRAY_EOF" >> "$GITHUB_OUTPUT"
+
+        # Also run the human-readable output for the log
+        npx claude-code-xray ci --min-score ${{ inputs.min-score }} --min-safety ${{ inputs.min-safety }} || true
+
+    - name: Post PR comment
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        SCORE="${{ steps.xray.outputs.score }}"
+        PASS="${{ steps.xray.outputs.pass }}"
+        DIMS='${{ steps.xray.outputs.dimensions }}'
+        MIN_SCORE="${{ inputs.min-score }}"
+        MIN_SAFETY="${{ inputs.min-safety }}"
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+
+        # Build status emoji and label
+        if [ "$PASS" = "true" ]; then
+          STATUS_ICON="white_check_mark"
+          STATUS_LABEL="PASS"
+        else
+          STATUS_ICON="x"
+          STATUS_LABEL="FAIL"
+        fi
+
+        # Build dimension table from JSON
+        DIM_TABLE=$(echo "$DIMS" | node -e "
+          const d = JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+          const rows = Object.entries(d).map(([k, v]) => {
+            const icon = v.score >= 70 ? ':green_circle:' : v.score >= 40 ? ':yellow_circle:' : ':red_circle:';
+            return '| ' + k.charAt(0).toUpperCase() + k.slice(1) + ' | ' + icon + ' ' + v.score + ' | ' + v.checks_passed + '/' + v.checks_total + ' |';
+          });
+          console.log(rows.join('\n'));
+        ")
+
+        # Build the comment body
+        BODY=$(cat <<COMMENT_EOF
+        ## :mag: Claude Code X-Ray :${STATUS_ICON}: ${STATUS_LABEL}
+
+        **Score: ${SCORE}/100** $([ "$MIN_SCORE" != "0" ] && echo "(min: ${MIN_SCORE})")
+
+        | Dimension | Score | Checks |
+        |-----------|-------|--------|
+        ${DIM_TABLE}
+
+        $([ "$PASS" != "true" ] && echo "> :warning: **Blocking:** Score ${SCORE} is below the required threshold." || echo "> :sparkles: All thresholds met.")
+
+        ---
+        <sub>Posted by [Claude Code X-Ray](https://github.com/ArshyaAI/claude-code-xray)</sub>
+        COMMENT_EOF
+        )
+
+        # Delete previous X-Ray comments (keep only latest)
+        gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+          --jq '.[] | select(.body | contains("Claude Code X-Ray")) | .id' \
+          | while read -r comment_id; do
+              gh api -X DELETE "repos/${{ github.repository }}/issues/comments/${comment_id}" || true
+            done
+
+        # Post the new comment
+        gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+          -f body="$BODY"
+
+    - name: Enforce threshold
+      if: steps.xray.outputs.pass == 'false'
+      shell: bash
+      run: |
+        echo "::error::X-Ray score ${{ steps.xray.outputs.score }} is below the required threshold"
+        exit 1
