@@ -9,11 +9,12 @@
  * passed checks mapped onto 0-100.
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { detectArchetype } from "../orchestrator/detect-archetype.js";
 import { FEATURE_INVENTORY } from "./features.js";
 import type { CheckResult, DimensionScore } from "./types.js";
+import { readJson, getHome } from "./utils.js";
 
 // ─── Known top-level keys for settings.json (all scopes) ────────────────────
 // Derived from Claude Code source intelligence (March 2026).
@@ -63,23 +64,8 @@ const ARCHETYPE_SKILLS: Record<string, string[]> = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function readJson(filePath: string): Record<string, unknown> | null {
-  if (!existsSync(filePath)) return null;
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8")) as Record<
-      string,
-      unknown
-    >;
-  } catch {
-    return null;
-  }
-}
-
 function getSettingsFiles(repoRoot: string): Record<string, unknown>[] {
-  const home = process.env.HOME ?? process.env.USERPROFILE;
-  if (!home) {
-    throw new Error("HOME or USERPROFILE environment variable is required");
-  }
+  const home = getHome();
   const paths = [
     join(home, ".claude", "settings.json"),
     join(repoRoot, ".claude", "settings.json"),
@@ -91,10 +77,7 @@ function getSettingsFiles(repoRoot: string): Record<string, unknown>[] {
 }
 
 function listInstalledSkills(): string[] {
-  const home = process.env.HOME ?? process.env.USERPROFILE;
-  if (!home) {
-    throw new Error("HOME or USERPROFILE environment variable is required");
-  }
+  const home = getHome();
   const skillsDir = join(home, ".claude", "skills");
   if (!existsSync(skillsDir)) return [];
   try {

@@ -11,37 +11,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { CheckResult, DimensionScore, SecurityAlert } from "./types.js";
-
-// ─── Settings file paths ────────────────────────────────────────────────────
-
-interface SettingsLocations {
-  user: string; // ~/.claude/settings.json
-  projectShared: string; // .claude/settings.json
-  projectLocal: string; // .claude/settings.local.json
-  claudeJson: string; // ~/.claude.json (MCP servers, global config)
-}
-
-function getSettingsLocations(repoRoot: string): SettingsLocations {
-  const home = process.env.HOME ?? process.env.USERPROFILE;
-  if (!home) {
-    throw new Error("HOME or USERPROFILE environment variable is required");
-  }
-  return {
-    user: join(home, ".claude", "settings.json"),
-    projectShared: join(repoRoot, ".claude", "settings.json"),
-    projectLocal: join(repoRoot, ".claude", "settings.local.json"),
-    claudeJson: join(home, ".claude.json"),
-  };
-}
-
-function readJson(path: string): Record<string, unknown> | null {
-  if (!existsSync(path)) return null;
-  try {
-    return JSON.parse(readFileSync(path, "utf-8"));
-  } catch {
-    return null;
-  }
-}
+import { readJson, getSettingsLocations } from "./utils.js";
 
 // ─── Individual checks ──────────────────────────────────────────────────────
 

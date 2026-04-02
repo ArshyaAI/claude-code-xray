@@ -14,6 +14,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { CheckResult, DimensionScore } from "./types.js";
+import { readJson, getHome } from "./utils.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -40,26 +41,6 @@ interface CostSummaryFields {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function readJson(filePath: string): Record<string, unknown> | null {
-  if (!existsSync(filePath)) return null;
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8")) as Record<
-      string,
-      unknown
-    >;
-  } catch {
-    return null;
-  }
-}
-
-function getHome(): string {
-  const home = process.env["HOME"] ?? process.env["USERPROFILE"];
-  if (!home) {
-    throw new Error("HOME or USERPROFILE environment variable is required");
-  }
-  return home;
-}
 
 /** Derive a project slug from the repo root path (mirrors Claude Code convention). */
 function repoToSlug(repoRoot: string): string {
