@@ -56,6 +56,9 @@ const ARCHETYPE_SKILLS: Record<string, string[]> = {
   "rust-cli": [],
   "go-service": [],
   "python-app": [],
+  "shopify-theme": ["shopify-liquid-themes", "liquid-theme-a11y"],
+  "docker-service": [],
+  unknown: [],
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
