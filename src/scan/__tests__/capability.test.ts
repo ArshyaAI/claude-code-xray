@@ -47,7 +47,7 @@ describe("scanCapability", () => {
     }
   });
 
-  it("has 4 checks (features, schema, skills, coordinator)", () => {
+  it("has 7 checks (features, schema, skills, coordinator, project settings, CLAUDE.md, MCP)", () => {
     const repo = setup();
     const origHome = process.env.HOME;
     process.env.HOME = join(TMP, "fake-home");
@@ -55,12 +55,15 @@ describe("scanCapability", () => {
     try {
       writeProjectSettings(repo, {});
       const result = scanCapability(repo);
-      assert.equal(result.checks.length, 4);
+      assert.equal(result.checks.length, 7);
       const names = result.checks.map((c) => c.name);
       assert.ok(names.includes("Active features"));
       assert.ok(names.includes("Schema validity"));
       assert.ok(names.includes("Archetype skills"));
       assert.ok(names.includes("Coordinator available"));
+      assert.ok(names.includes("Project-level settings"));
+      assert.ok(names.includes("Project CLAUDE.md"));
+      assert.ok(names.includes("MCP servers configured"));
     } finally {
       process.env.HOME = origHome;
       teardown();

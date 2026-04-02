@@ -117,12 +117,12 @@ describe("detectArchetype", () => {
     }
   });
 
-  it("falls back to ts-lib when nothing matches", () => {
+  it("falls back to unknown when nothing matches", () => {
     setup();
     try {
       const result = detectArchetype(TMP);
-      assert.equal(result.archetype, "ts-lib");
-      assert.ok(result.reason.includes("default"));
+      assert.equal(result.archetype, "unknown");
+      assert.ok(result.reason.includes("unclassified"));
     } finally {
       teardown();
     }

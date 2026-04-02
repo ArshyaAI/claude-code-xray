@@ -24,7 +24,7 @@ describe("loadConfig", () => {
     try {
       const result = loadConfig(TMP);
       assert.equal(result.valid, true);
-      assert.equal(result.config.archetype, "ts-lib");
+      assert.equal(result.config.archetype, "unknown");
       assert.equal(result.config.max_crews, 5);
       assert.equal(result.config.default_budget_usd, 50);
       assert.equal(result.config.task_source, "PROGRAM.md");
