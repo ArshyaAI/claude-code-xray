@@ -56,6 +56,24 @@ const ARCHETYPE_DEFAULTS: Record<Archetype, ArchetypeDefaults> = {
     expected_test_time_sec: 120,
     cost_multiplier: 1.0,
   },
+  "shopify-theme": {
+    throughput_max: 6,
+    expected_build_time_sec: 10,
+    expected_test_time_sec: 30,
+    cost_multiplier: 1.0,
+  },
+  "docker-service": {
+    throughput_max: 8,
+    expected_build_time_sec: 60,
+    expected_test_time_sec: 60,
+    cost_multiplier: 1.0,
+  },
+  unknown: {
+    throughput_max: 8,
+    expected_build_time_sec: 30,
+    expected_test_time_sec: 60,
+    cost_multiplier: 1.0,
+  },
 };
 
 /**

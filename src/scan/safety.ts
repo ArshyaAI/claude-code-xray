@@ -191,6 +191,105 @@ function checkBashDenyGap(settings: Record<string, unknown>[]): CheckResult {
   };
 }
 
+// ─── Project-level safety checks ───────────────────────────────────────────
+
+function checkProjectDenyRules(
+  projectSharedPath: string,
+  projectLocalPath: string,
+): CheckResult {
+  const projectFiles = [
+    readJson(projectSharedPath),
+    readJson(projectLocalPath),
+  ].filter(Boolean) as Record<string, unknown>[];
+
+  if (projectFiles.length === 0) {
+    return {
+      name: "Project-level deny rules",
+      passed: false,
+      value: "no project settings",
+      target: "project .claude/settings.json with deny rules",
+      source: `${projectSharedPath}, ${projectLocalPath}`,
+      confidence: "verified",
+      fix_available: true,
+      detail:
+        "No project-level settings.json found. This repo relies entirely on user-level deny rules. Add .claude/settings.json with project-specific deny patterns.",
+    };
+  }
+
+  const permissions = projectFiles
+    .map((s) => s.permissions as Record<string, unknown> | undefined)
+    .filter(Boolean);
+
+  const denyRules = permissions.flatMap(
+    (p) => (p!.deny as string[] | undefined) ?? [],
+  );
+
+  const passed = denyRules.length > 0;
+
+  return {
+    name: "Project-level deny rules",
+    passed,
+    value: passed ? `${denyRules.length} rule(s)` : "no deny rules",
+    target: "≥1 project-specific deny rule",
+    source: projectFiles.length > 0 ? "project .claude/settings.json" : "n/a",
+    confidence: "verified",
+    fix_available: !passed,
+    detail: passed
+      ? undefined
+      : "Project settings exist but have no deny rules. Add project-specific file patterns to protect repo secrets.",
+  };
+}
+
+function checkGitignoreSecrets(repoRoot: string): CheckResult {
+  const gitignorePath = join(repoRoot, ".gitignore");
+  if (!existsSync(gitignorePath)) {
+    return {
+      name: "Gitignore covers secrets",
+      passed: false,
+      value: "no .gitignore",
+      target: ".gitignore with secret patterns",
+      source: gitignorePath,
+      confidence: "verified",
+      fix_available: true,
+      detail:
+        "No .gitignore found. Secrets could be committed to the repository.",
+    };
+  }
+
+  let content: string;
+  try {
+    content = readFileSync(gitignorePath, "utf-8").toLowerCase();
+  } catch {
+    return {
+      name: "Gitignore covers secrets",
+      passed: false,
+      value: "unreadable",
+      target: ".gitignore with secret patterns",
+      source: gitignorePath,
+      confidence: "verified",
+      fix_available: true,
+      detail: "Could not read .gitignore.",
+    };
+  }
+
+  const secretPatterns = [".env", ".pem", "credentials", "secrets"];
+  const covered = secretPatterns.filter((pat) => content.includes(pat));
+  const passed = covered.length >= 2;
+
+  return {
+    name: "Gitignore covers secrets",
+    passed,
+    value: `${covered.length}/${secretPatterns.length} patterns`,
+    target: "≥2 secret patterns in .gitignore",
+    source: gitignorePath,
+    confidence: "inferred",
+    fix_available: !passed,
+    detail: passed
+      ? undefined
+      : `Missing gitignore patterns for: ${secretPatterns.filter((p) => !covered.includes(p)).join(", ")}`,
+  };
+}
+
 // ─── Score calculation ──────────────────────────────────────────────────────
 
 function calculateSafetyScore(checks: CheckResult[]): number {
@@ -279,6 +378,8 @@ export function scanSafety(repoRoot: string): {
     checkMcpTrust(settingsFiles),
     checkPreToolUseHook(settingsFiles),
     checkBashDenyGap(settingsFiles),
+    checkProjectDenyRules(locs.projectShared, locs.projectLocal),
+    checkGitignoreSecrets(resolve(repoRoot)),
   ];
 
   const score = calculateSafetyScore(checks);
