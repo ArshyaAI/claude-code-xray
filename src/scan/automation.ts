@@ -11,38 +11,13 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { CheckResult, DimensionScore } from "./types.js";
+import { readJson, getHome, getSettingsLocations } from "./utils.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function readJson(filePath: string): Record<string, unknown> | null {
-  if (!existsSync(filePath)) return null;
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8")) as Record<
-      string,
-      unknown
-    >;
-  } catch {
-    return null;
-  }
-}
-
-function getSettingsLocations(repoRoot: string): {
-  user: string;
-  projectShared: string;
-  projectLocal: string;
-} {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
-  return {
-    user: join(home, ".claude", "settings.json"),
-    projectShared: join(repoRoot, ".claude", "settings.json"),
-    projectLocal: join(repoRoot, ".claude", "settings.local.json"),
-  };
-}
-
 function expandHome(p: string): string {
   if (p.startsWith("~/")) {
-    const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
-    return join(home, p.slice(2));
+    return join(getHome(), p.slice(2));
   }
   return p;
 }
@@ -257,7 +232,7 @@ interface ClaudemdLevel {
 }
 
 function checkClaudemdHierarchy(repoRoot: string): CheckResult {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = getHome();
   const resolved = resolve(repoRoot);
 
   const levels: ClaudemdLevel[] = [
@@ -341,7 +316,7 @@ function checkMemoryHealth(
   settingsFiles: Record<string, unknown>[],
   repoRoot: string,
 ): CheckResult {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = getHome();
 
   // Scope to current repo: derive slug from repoRoot path
   // Claude Code uses the absolute path with / replaced by - as the project slug

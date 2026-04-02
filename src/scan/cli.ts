@@ -22,97 +22,98 @@ const flags = new Set(rawArgs.filter((a) => a.startsWith("--")));
 const positional = rawArgs.filter((a) => !a.startsWith("--"));
 const command = positional[0] ?? "scan";
 
-switch (command) {
-  case "scan":
-  case undefined: {
-    const result = runXRay(".");
+try {
+  switch (command) {
+    case "scan":
+    case undefined: {
+      const result = runXRay(".");
 
-    // Track history
-    appendHistory({
-      timestamp: result.timestamp,
-      action: "scan",
-      repo: result.repo,
-      overall_score: result.overall_score,
-      dimensions_scored: result.dimensions_scored,
-    });
+      // Track history
+      appendHistory({
+        timestamp: result.timestamp,
+        action: "scan",
+        repo: result.repo,
+        overall_score: result.overall_score,
+        dimensions_scored: result.dimensions_scored,
+      });
 
-    if (flags.has("--json")) {
-      console.log(JSON.stringify(result, null, 2));
-    } else {
-      console.log(renderResult(result));
-    }
-    break;
-  }
-
-  case "fix": {
-    const dryRun = !flags.has("--apply");
-    const result = runXRay(".");
-    const fixes = generateFixes(result, ".");
-
-    if (fixes.length === 0) {
-      console.log("No fixes needed. Your setup is solid.");
+      if (flags.has("--json")) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(renderResult(result));
+      }
       break;
     }
 
-    console.log(
-      dryRun
-        ? `${fixes.length} fixes available (dry run):\n`
-        : `Applying ${fixes.length} fixes...\n`,
-    );
+    case "fix": {
+      const dryRun = !flags.has("--apply");
+      const result = runXRay(".");
+      const fixes = generateFixes(result, ".");
 
-    let applied = 0;
-    for (const fix of fixes) {
-      applyFix(fix, dryRun);
-      if (!dryRun) applied++;
-      console.log("");
-    }
+      if (fixes.length === 0) {
+        console.log("No fixes needed. Your setup is solid.");
+        break;
+      }
 
-    if (dryRun) {
-      console.log("Run with --apply to execute these fixes.");
-    } else {
-      // Re-scan and show delta
-      const after = runXRay(".");
-      const delta = after.overall_score - result.overall_score;
       console.log(
-        `\n${result.overall_score} → ${after.overall_score} ${delta > 0 ? `(+${delta})` : ""}\n`,
-      );
-      console.log(
-        `Applied ${applied} fixes. Backups saved to each file's directory.`,
+        dryRun
+          ? `${fixes.length} fixes available (dry run):\n`
+          : `Applying ${fixes.length} fixes...\n`,
       );
 
-      appendHistory({
-        timestamp: new Date().toISOString(),
-        action: "fix",
-        repo: result.repo,
-        overall_score: after.overall_score,
-        dimensions_scored: after.dimensions_scored,
-        fixes_applied: fixes.map((f) => f.id),
-        score_delta: delta,
-      });
+      let applied = 0;
+      for (const fix of fixes) {
+        applyFix(fix, dryRun);
+        if (!dryRun) applied++;
+        console.log("");
+      }
+
+      if (dryRun) {
+        console.log("Run with --apply to execute these fixes.");
+      } else {
+        // Re-scan and show delta
+        const after = runXRay(".");
+        const delta = after.overall_score - result.overall_score;
+        console.log(
+          `\n${result.overall_score} → ${after.overall_score} ${delta > 0 ? `(+${delta})` : ""}\n`,
+        );
+        console.log(
+          `Applied ${applied} fixes. Backups saved to each file's directory.`,
+        );
+
+        appendHistory({
+          timestamp: new Date().toISOString(),
+          action: "fix",
+          repo: result.repo,
+          overall_score: after.overall_score,
+          dimensions_scored: after.dimensions_scored,
+          fixes_applied: fixes.map((f) => f.id),
+          score_delta: delta,
+        });
+      }
+      break;
     }
-    break;
-  }
 
-  case "badge": {
-    const result = runXRay(".");
-    if (flags.has("--svg")) {
-      console.log(badgeSvg(result.overall_score));
-    } else {
-      console.log(badgeMarkdown(result.overall_score));
-      console.log("\nAdd this to your README to show your setup score.");
+    case "badge": {
+      const result = runXRay(".");
+      if (flags.has("--svg")) {
+        console.log(badgeSvg(result.overall_score));
+      } else {
+        console.log(badgeMarkdown(result.overall_score));
+        console.log("\nAdd this to your README to show your setup score.");
+      }
+      break;
     }
-    break;
-  }
 
-  case "history": {
-    const entries = readHistory();
-    console.log(renderHistory(entries));
-    break;
-  }
+    case "history": {
+      const entries = readHistory();
+      console.log(renderHistory(entries));
+      break;
+    }
 
-  case "--help":
-  case "help": {
-    console.log(`
+    case "--help":
+    case "help": {
+      console.log(`
 Claude Code X-Ray — See inside your Claude Code setup
 
 Usage:
@@ -129,11 +130,16 @@ Options:
   --svg     Output SVG badge instead of markdown
   --help    Show this help
 `);
-    break;
-  }
+      break;
+    }
 
-  default:
-    console.error(`Unknown command: ${command}`);
-    console.error("Run 'npx claude-code-xray --help' for usage.");
-    process.exit(1);
+    default:
+      console.error(`Unknown command: ${command}`);
+      console.error("Run 'npx claude-code-xray --help' for usage.");
+      process.exit(1);
+  }
+} catch (err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`\n[xray] Error: ${msg}`);
+  process.exit(1);
 }

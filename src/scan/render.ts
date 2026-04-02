@@ -63,10 +63,39 @@ export function renderResult(result: XRayResult): string {
 
   // Overall score
   const color = scoreColor(result.overall_score);
-  const grade = gradeFromScore(result.overall_score);
   lines.push(
-    `  ${BOLD}YOUR SCORE: ${color}${result.overall_score}/100${RESET}  ${DIM}(${result.dimensions_scored}/4 dimensions scored)${RESET}`,
+    `  ${BOLD}YOUR SCORE: ${color}${result.overall_score}/100${RESET}  ${gradeFromScore(result.overall_score)}`,
   );
+  lines.push("");
+
+  // Score comparability — show which dimensions contributed
+  const allDimKeys: Array<{ key: string; label: string }> = [
+    { key: "safety", label: "Safety" },
+    { key: "capability", label: "Capability" },
+    { key: "automation", label: "Automation" },
+    { key: "efficiency", label: "Efficiency" },
+  ];
+  const skipped = allDimKeys.filter((d) => {
+    const dim = result.dimensions[d.key];
+    return !dim || dim.checks.length === 0;
+  });
+
+  if (skipped.length === 0) {
+    lines.push(
+      `  ${BOLD}Scored: ${result.dimensions_scored}/4 dimensions${RESET}  ${GREEN}(all dimensions)${RESET}`,
+    );
+  } else {
+    const skippedList = skipped
+      .map((d) => {
+        const dim = result.dimensions[d.key];
+        const reason = !dim ? "scanner failed" : "no data";
+        return `${d.label} excluded — ${reason}`;
+      })
+      .join("; ");
+    lines.push(
+      `  ${BOLD}Scored: ${result.dimensions_scored}/4 dimensions${RESET}  ${DIM}(${skippedList})${RESET}`,
+    );
+  }
   lines.push("");
 
   // Dimension bars
@@ -168,6 +197,34 @@ export function renderResult(result: XRayResult): string {
 
   lines.push(`└${"─".repeat(w)}`);
   lines.push("");
+
+  // Beginner mode — helpful onboarding when score is very low
+  const isBeginner = result.overall_score < 20 || result.dimensions_scored < 2;
+  if (isBeginner) {
+    lines.push(`${BOLD}├─ GETTING STARTED ${"─".repeat(w - 18)}${RESET}`);
+    lines.push(`│  Your Claude Code setup is mostly defaults.`);
+    lines.push(`│  Quick wins to get started:`);
+    lines.push("│");
+    lines.push(
+      `│  ${BOLD}1.${RESET} Run: ${CYAN}npx claude-code-xray fix${RESET}`,
+    );
+    lines.push(`│     Adds deny rules for secrets + enables sandbox`);
+    lines.push("│");
+    lines.push(
+      `│  ${BOLD}2.${RESET} Create a ${CYAN}CLAUDE.md${RESET} in your project root`,
+    );
+    lines.push(`│     Tells Claude about your codebase and conventions`);
+    lines.push("│");
+    lines.push(
+      `│  ${BOLD}3.${RESET} Run this tool again to see your score improve`,
+    );
+    lines.push("│");
+    lines.push(
+      `│  ${DIM}Most users go from ~15 to ~55 in under 5 minutes.${RESET}`,
+    );
+    lines.push(`└${"─".repeat(w)}`);
+    lines.push("");
+  }
 
   // Badge suggestion
   lines.push(`  ${DIM}Badge: npx claude-code-xray badge${RESET}`);

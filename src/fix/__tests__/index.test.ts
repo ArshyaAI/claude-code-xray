@@ -307,9 +307,10 @@ describe("deepMerge (tested via applyFix)", () => {
       const content = JSON.parse(readFileSync(targetFile, "utf-8"));
       // Nested object should be merged, not replaced
       assert.equal(content.permissions.defaultMode, "default");
-      // Arrays should be concatenated and deduped
-      assert.ok(content.permissions.deny.includes("**/.env"));
-      assert.ok(content.permissions.deny.includes("**/secrets/**"));
+      // Arrays use source value (replace, not concatenate) — fix generators
+      // produce the complete merged array, so deepMerge must not duplicate.
+      assert.deepEqual(content.permissions.deny, ["**/secrets/**"]);
+      assert.deepEqual(content.permissions.allow, ["src/**"]);
       // New keys should be added
       assert.equal(content.sandbox.enabled, true);
       assert.ok(content.hooks);
@@ -318,9 +319,9 @@ describe("deepMerge (tested via applyFix)", () => {
     }
   });
 
-  it("deduplicates arrays during merge", () => {
+  it("replaces arrays with source value during merge", () => {
     mkdirSync(TMP, { recursive: true });
-    const targetFile = join(TMP, "dedup-merge.json");
+    const targetFile = join(TMP, "replace-merge.json");
     writeFileSync(
       targetFile,
       JSON.stringify({ items: ["a", "b", "c"] }),
@@ -328,9 +329,9 @@ describe("deepMerge (tested via applyFix)", () => {
     );
     try {
       const fix: Fix = {
-        id: "test/dedup",
+        id: "test/replace",
         dimension: "safety",
-        description: "Dedup test",
+        description: "Replace test",
         diff: JSON.stringify({ items: ["b", "c", "d"] }),
         impact_estimate: 10,
         security_relevant: false,
@@ -340,7 +341,8 @@ describe("deepMerge (tested via applyFix)", () => {
       applyFix(fix, false);
 
       const content = JSON.parse(readFileSync(targetFile, "utf-8"));
-      assert.deepEqual(content.items, ["a", "b", "c", "d"]);
+      // Arrays: source wins (fix generators produce the complete merged array)
+      assert.deepEqual(content.items, ["b", "c", "d"]);
     } finally {
       teardown();
     }

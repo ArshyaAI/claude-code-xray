@@ -11,9 +11,10 @@
  * Global config: ~/.claude.json (lastTotal* token fields per project)
  */
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { CheckResult, DimensionScore } from "./types.js";
+import { readJson, getHome } from "./utils.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -40,22 +41,6 @@ interface CostSummaryFields {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function readJson(filePath: string): Record<string, unknown> | null {
-  if (!existsSync(filePath)) return null;
-  try {
-    return JSON.parse(readFileSync(filePath, "utf-8")) as Record<
-      string,
-      unknown
-    >;
-  } catch {
-    return null;
-  }
-}
-
-function getHome(): string {
-  return process.env["HOME"] ?? process.env["USERPROFILE"] ?? "/tmp";
-}
 
 /** Derive a project slug from the repo root path (mirrors Claude Code convention). */
 function repoToSlug(repoRoot: string): string {
@@ -106,9 +91,15 @@ function findProjectDir(repoRoot: string): string | null {
 /** List all *.jsonl session files in a project directory. */
 function listSessionFiles(projectDir: string): string[] {
   try {
-    return readdirSync(projectDir)
+    const files = readdirSync(projectDir)
       .filter((f) => f.endsWith(".jsonl"))
       .map((f) => join(projectDir, f));
+    // Cap at 20 most recent files to avoid OOM on power users
+    return files
+      .map((f) => ({ path: f, mtime: statSync(f).mtimeMs }))
+      .sort((a, b) => b.mtime - a.mtime)
+      .slice(0, 20)
+      .map((f) => f.path);
   } catch {
     return [];
   }
