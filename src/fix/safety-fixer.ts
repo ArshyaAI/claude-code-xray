@@ -20,7 +20,10 @@ import type { Fix, XRayResult } from "../scan/types.js";
 function resolveSettingsTarget(repoRoot: string): string {
   const projectSettings = join(repoRoot, ".claude", "settings.json");
   if (existsSync(projectSettings)) return projectSettings;
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
   return join(home, ".claude", "settings.json");
 }
 
@@ -148,7 +151,10 @@ export function fixSandboxConfig(
   const projectSettings = join(repoRoot, ".claude", "settings.json");
   const targetFile = projectSettings;
   const current = readSettingsJson(targetFile);
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
 
   const diff = JSON.stringify(
     {

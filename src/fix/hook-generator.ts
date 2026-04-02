@@ -18,7 +18,10 @@ import type { Fix, XRayResult } from "../scan/types.js";
 function resolveSettingsTarget(repoRoot: string): string {
   const projectSettings = join(repoRoot, ".claude", "settings.json");
   if (existsSync(projectSettings)) return projectSettings;
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
   return join(home, ".claude", "settings.json");
 }
 
@@ -58,7 +61,7 @@ function getHooks(settings: Record<string, unknown>): Record<string, unknown> {
 const BLOCK_SCRIPT = `#!/usr/bin/env bash
 set -euo pipefail
 INPUT=$(cat)
-CMD=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('command',''))" 2>/dev/null || true)
+CMD=$(echo "$INPUT" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);console.log((j.tool_input||{}).command||'')}catch{console.log('')}})" 2>/dev/null || true)
 DESTRUCTIVE_PATTERNS=(
   'rm -rf'
   'rm -r /'
@@ -87,7 +90,7 @@ LOG_DIR="\${HOME}/.claude/audit"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/$(date +%Y-%m-%d).jsonl"
 INPUT=$(cat)
-echo "{\"ts\":\"$(date -u +%FT%TZ)\",\"pid\":$$,\"event\":$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps({'tool':d.get('tool_name',''),'truncated_input':str(d.get('tool_input',''))[:200]}))" 2>/dev/null || echo '{}')}" >> "$LOG_FILE"
+echo "{\"ts\":\"$(date -u +%FT%TZ)\",\"pid\":$$,\"event\":$(echo "$INPUT" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);const ti=JSON.stringify(j.tool_input||'').slice(0,200).replace(/([A-Za-z0-9_]*(KEY|SECRET|TOKEN|PASSWORD|AUTH|CREDENTIAL)[A-Za-z0-9_]*)[=:]\\s*\\S+/gi,'\$1=[REDACTED]');console.log(JSON.stringify({tool:j.tool_name||'',truncated_input:ti}))}catch{console.log('{}')}})" 2>/dev/null || echo '{}')}" >> "$LOG_FILE"
 exit 0`;
 
 // ─── Fix generators ──────────────────────────────────────────────────────────

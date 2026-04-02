@@ -26,6 +26,12 @@ export interface DimensionScore {
   checks: CheckResult[];
 }
 
+export type DimensionKey =
+  | "safety"
+  | "capability"
+  | "automation"
+  | "efficiency";
+
 export type Confidence = "verified" | "inferred";
 
 export interface CheckResult {

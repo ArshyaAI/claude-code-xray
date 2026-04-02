@@ -76,7 +76,10 @@ function readJson(filePath: string): Record<string, unknown> | null {
 }
 
 function getSettingsFiles(repoRoot: string): Record<string, unknown>[] {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
   const paths = [
     join(home, ".claude", "settings.json"),
     join(repoRoot, ".claude", "settings.json"),
@@ -88,7 +91,10 @@ function getSettingsFiles(repoRoot: string): Record<string, unknown>[] {
 }
 
 function listInstalledSkills(): string[] {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
   const skillsDir = join(home, ".claude", "skills");
   if (!existsSync(skillsDir)) return [];
   try {

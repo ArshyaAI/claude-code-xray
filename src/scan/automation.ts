@@ -31,7 +31,10 @@ function getSettingsLocations(repoRoot: string): {
   projectShared: string;
   projectLocal: string;
 } {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
   return {
     user: join(home, ".claude", "settings.json"),
     projectShared: join(repoRoot, ".claude", "settings.json"),
@@ -41,7 +44,10 @@ function getSettingsLocations(repoRoot: string): {
 
 function expandHome(p: string): string {
   if (p.startsWith("~/")) {
-    const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+    const home = process.env.HOME ?? process.env.USERPROFILE;
+    if (!home) {
+      throw new Error("HOME or USERPROFILE environment variable is required");
+    }
     return join(home, p.slice(2));
   }
   return p;
@@ -257,7 +263,10 @@ interface ClaudemdLevel {
 }
 
 function checkClaudemdHierarchy(repoRoot: string): CheckResult {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
   const resolved = resolve(repoRoot);
 
   const levels: ClaudemdLevel[] = [
@@ -341,7 +350,10 @@ function checkMemoryHealth(
   settingsFiles: Record<string, unknown>[],
   repoRoot: string,
 ): CheckResult {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
 
   // Scope to current repo: derive slug from repoRoot path
   // Claude Code uses the absolute path with / replaced by - as the project slug

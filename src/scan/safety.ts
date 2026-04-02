@@ -22,7 +22,10 @@ interface SettingsLocations {
 }
 
 function getSettingsLocations(repoRoot: string): SettingsLocations {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) {
+    throw new Error("HOME or USERPROFILE environment variable is required");
+  }
   return {
     user: join(home, ".claude", "settings.json"),
     projectShared: join(repoRoot, ".claude", "settings.json"),

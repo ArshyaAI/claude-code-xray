@@ -17,23 +17,17 @@ export function computeScore(
   dimensions: Record<string, DimensionScore>,
   weights: ScoringWeights = DEFAULT_WEIGHTS,
 ): { overall: number; scored: number } {
-  const weightMap: Record<string, number> = {
-    "Safety & Security": weights.safety,
-    Capability: weights.capability,
-    "Automation & Workflow": weights.automation,
-    Efficiency: weights.efficiency,
-  };
-
-  // Filter to dimensions that have data
-  const active = Object.values(dimensions).filter((d) => d.checks.length > 0);
+  // Use dimension keys directly instead of display names
+  const active = Object.entries(dimensions).filter(
+    ([, d]) => d.checks.length > 0,
+  );
 
   if (active.length === 0) {
     return { overall: 0, scored: 0 };
   }
 
-  // Renormalize weights for active dimensions
   const totalWeight = active.reduce(
-    (sum, d) => sum + (weightMap[d.name] ?? 0),
+    (sum, [key]) => sum + (weights[key as keyof ScoringWeights] ?? 0),
     0,
   );
 
@@ -41,8 +35,8 @@ export function computeScore(
     return { overall: 0, scored: active.length };
   }
 
-  const weighted = active.reduce((sum, d) => {
-    const w = weightMap[d.name] ?? 0;
+  const weighted = active.reduce((sum, [key, d]) => {
+    const w = weights[key as keyof ScoringWeights] ?? 0;
     return sum + d.score * (w / totalWeight);
   }, 0);
 
