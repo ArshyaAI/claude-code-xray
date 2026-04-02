@@ -85,13 +85,14 @@ Claude Code X-Ray ────────────────────�
 
 X-Ray is not a linter. It doesn't check your code style or flag unused imports. It checks your **Claude Code harness** — the configuration that controls what an AI agent can do on your machine.
 
-|                    | X-Ray                                                                                                                                                          | Linters / Security scanners          |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| **What it reads**  | `settings.json`, hooks, CLAUDE.md, session transcripts                                                                                                         | Source code, dependencies            |
-| **What it checks** | Agent permissions, safety gates, capability surface                                                                                                            | Code quality, known CVEs in packages |
-| **Grounding**      | Claude Code's actual implementation ([source analysis](https://venturebeat.com/technology/claude-codes-source-code-appears-to-have-leaked-heres-what-we-know)) | Language specs, advisory databases   |
-| **Catches**        | `bypassPermissions` + no sandbox = agent can `rm -rf /`                                                                                                        | npm audit findings                   |
-| **Fixes**          | Adds deny rules, enables sandbox, installs safety hooks                                                                                                        | Updates package versions             |
+|                        | X-Ray                                                                                               | /refine               | cclint            | Generic linters    |
+| ---------------------- | --------------------------------------------------------------------------------------------------- | --------------------- | ----------------- | ------------------ |
+| **Safety-first**       | Yes, weighted 30% of score. Catches `bypassPermissions` + no sandbox, Bash deny gap, MCP auto-trust | General setup quality | CLAUDE.md lint    | Code quality, CVEs |
+| **Auto-fix**           | Yes, with dry-run default, backup, and rollback                                                     | Yes, via interview    | No                | No                 |
+| **Grounded in source** | Yes, each check labeled `[VERIFIED]` or `[INFERRED]`                                                | Best practices        | Schema validation | Language specs     |
+| **Score over time**    | Yes, history sparkline + badge                                                                      | Single-run score      | No                | No                 |
+| **Privacy**            | Fully local, never reads message content                                                            | Fully local           | Fully local       | Varies             |
+| **Dimensions**         | 4 (safety, capability, automation, efficiency)                                                      | 8                     | N/A               | N/A                |
 
 Every check is labeled `[VERIFIED]` (from official schema/docs) or `[INFERRED]` (from source analysis), so you know the confidence level.
 
