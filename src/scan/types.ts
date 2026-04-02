@@ -85,12 +85,38 @@ export interface Fix {
 
 export interface HistoryEntry {
   timestamp: string;
-  action: "scan" | "fix";
+  action: "scan" | "fix" | "ci";
   repo: string;
   overall_score: number;
   dimensions_scored: number;
   fixes_applied?: string[];
   score_delta?: number;
+  dimensions?: Record<string, { name: string; score: number }>;
+  checks?: CheckResult[];
+}
+
+// ─── Diff ──────────────────────────────────────────────────────────────────
+
+export interface DiffResult {
+  previous_score: number;
+  current_score: number;
+  delta: number;
+  regressed: CheckDelta[];
+  improved: CheckDelta[];
+  unchanged_count: number;
+  dimension_deltas: DimensionDelta[];
+}
+
+export interface CheckDelta {
+  name: string;
+  detail?: string | undefined;
+}
+
+export interface DimensionDelta {
+  name: string;
+  previous: number;
+  current: number;
+  delta: number;
 }
 
 // ─── Feature Inventory ──────────────────────────────────────────────────────
