@@ -36,6 +36,8 @@ function checkPermissionMode(settings: Record<string, unknown>[]): CheckResult {
     detail: isBypass
       ? "bypassPermissions lets the agent run ANY command without approval. A background agent with this setting can modify any file at 3am."
       : undefined,
+    points: 25,
+    applicable: true,
   };
 }
 
@@ -71,6 +73,8 @@ function checkDenyRules(settings: Record<string, unknown>[]): CheckResult {
     detail: !hasDenyRules
       ? `Missing deny rules for: ${sensitivePatterns.filter((p) => !covered.includes(p)).join(", ")}`
       : undefined,
+    points: 15,
+    applicable: true,
   };
 }
 
@@ -91,6 +95,8 @@ function checkSandbox(settings: Record<string, unknown>[]): CheckResult {
     detail: !sandboxEnabled
       ? "No OS-level filesystem/network isolation. Read/Edit deny rules do NOT apply to Bash subprocesses."
       : undefined,
+    points: 15,
+    applicable: true,
   };
 }
 
@@ -108,6 +114,8 @@ function checkMcpTrust(settings: Record<string, unknown>[]): CheckResult {
     detail: enableAll
       ? "Every MCP server in every repo you clone is automatically trusted. A malicious .mcp.json in any cloned repo gets full access."
       : undefined,
+    points: 20,
+    applicable: true,
   };
 }
 
@@ -132,6 +140,8 @@ function checkPreToolUseHook(settings: Record<string, unknown>[]): CheckResult {
     detail: !hasPreToolUse
       ? "No safety gate on tool execution. Destructive commands (rm -rf, git push --force, DROP TABLE) execute without intervention."
       : undefined,
+    points: 10,
+    applicable: true,
   };
 }
 
@@ -161,6 +171,8 @@ function checkBashDenyGap(settings: Record<string, unknown>[]): CheckResult {
     detail: hasGap
       ? "You have Read/Edit deny rules but sandbox is off. A Bash subprocess can still read denied files (cat .env). Enable sandbox for OS-level enforcement."
       : undefined,
+    points: 5,
+    applicable: true,
   };
 }
 
@@ -186,6 +198,8 @@ function checkProjectDenyRules(
       fix_available: true,
       detail:
         "No project-level settings.json found. This repo relies entirely on user-level deny rules. Add .claude/settings.json with project-specific deny patterns.",
+      points: 5,
+      applicable: true,
     };
   }
 
@@ -210,6 +224,8 @@ function checkProjectDenyRules(
     detail: passed
       ? undefined
       : "Project settings exist but have no deny rules. Add project-specific file patterns to protect repo secrets.",
+    points: 5,
+    applicable: true,
   };
 }
 
@@ -226,6 +242,8 @@ function checkGitignoreSecrets(repoRoot: string): CheckResult {
       fix_available: true,
       detail:
         "No .gitignore found. Secrets could be committed to the repository.",
+      points: 5,
+      applicable: true,
     };
   }
 
@@ -242,6 +260,8 @@ function checkGitignoreSecrets(repoRoot: string): CheckResult {
       confidence: "verified",
       fix_available: true,
       detail: "Could not read .gitignore.",
+      points: 5,
+      applicable: true,
     };
   }
 
@@ -260,20 +280,37 @@ function checkGitignoreSecrets(repoRoot: string): CheckResult {
     detail: passed
       ? undefined
       : `Missing gitignore patterns for: ${secretPatterns.filter((p) => !covered.includes(p)).join(", ")}`,
+    points: 5,
+    applicable: true,
   };
 }
 
 // ─── Score calculation ──────────────────────────────────────────────────────
 
 function calculateSafetyScore(checks: CheckResult[]): number {
-  // Each check has equal weight within the dimension
-  const passed = checks.filter((c) => c.passed).length;
-  const total = checks.length;
-  if (total === 0) return 0;
+  const applicable = checks.filter((c) => c.applicable);
+  if (applicable.length === 0) return 0;
 
-  // Floor at 10 if any check ran (never 0 for partial data)
-  const raw = Math.round((passed / total) * 100);
-  return Math.max(raw, checks.length > 0 ? 10 : 0);
+  const maxPoints = applicable.reduce((sum, c) => sum + c.points, 0);
+  const earned = applicable
+    .filter((c) => c.passed)
+    .reduce((sum, c) => sum + c.points, 0);
+
+  let score = Math.round((earned / maxPoints) * 100);
+
+  // Defense-in-depth bonus: if all four key layers pass, add 10 (cap 100)
+  const layered = [
+    "Permission mode",
+    "Deny rules for sensitive files",
+    "Sandbox enabled",
+    "PreToolUse safety hook",
+  ];
+  if (layered.every((name) => checks.find((c) => c.name === name)?.passed)) {
+    score = Math.min(100, score + 10);
+  }
+
+  // Floor at 10 if any applicable check ran
+  return Math.max(score, applicable.length > 0 ? 10 : 0);
 }
 
 // ─── Security alerts ────────────────────────────────────────────────────────

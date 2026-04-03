@@ -22,6 +22,8 @@ function makeDimension(
       source: "test",
       confidence: "verified" as const,
       fix_available: false,
+      points: 10,
+      applicable: true,
     })),
   };
 }

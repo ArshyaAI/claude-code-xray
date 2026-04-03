@@ -24,6 +24,8 @@ function makeCheck(
     confidence: "verified" as const,
     fix_available: !passed,
     detail,
+    points: 10,
+    applicable: true,
   };
 }
 

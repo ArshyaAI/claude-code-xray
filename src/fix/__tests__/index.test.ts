@@ -31,6 +31,8 @@ function makeCheck(name: string, passed: boolean): CheckResult {
     source: "test",
     confidence: "verified",
     fix_available: !passed,
+    points: 10,
+    applicable: true,
   };
 }
 
