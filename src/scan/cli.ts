@@ -19,6 +19,7 @@ import { generateFixes, applyFix } from "../fix/index.js";
 import { badgeMarkdown, badgeSvg } from "../viral/badge.js";
 import { appendHistory, readHistory, renderHistory } from "../viral/history.js";
 import { computeDiff, renderDiff } from "./diff.js";
+import { consolidateMemory } from "../fix/memory-consolidator.js";
 import type { CheckResult } from "./types.js";
 
 const rawArgs = process.argv.slice(2);
@@ -276,6 +277,8 @@ Usage:
   npx claude-code-xray              Scan current directory
   npx claude-code-xray fix          Show available fixes (dry-run)
   npx claude-code-xray fix --apply  Apply fixes
+  npx claude-code-xray consolidate  Preview MEMORY.md consolidation
+  npx claude-code-xray consolidate --apply  Write consolidated MEMORY.md
   npx claude-code-xray badge        Generate README badge
   npx claude-code-xray history      Show score history
   npx claude-code-xray ci           CI gate (exit 1 on failure)
@@ -288,10 +291,35 @@ CI Options:
 
 Options:
   --json    Output scan/ci/diff results as JSON
-  --apply   Apply fixes (default: dry-run)
+  --apply   Apply fixes or consolidation (default: dry-run)
   --svg     Output SVG badge instead of markdown
   --help    Show this help
 `);
+      break;
+    }
+
+    case "consolidate": {
+      const dryRun = !flags.has("--apply");
+      const result = consolidateMemory(".", dryRun);
+
+      if (result.before === 0) {
+        console.log(result.diff);
+        break;
+      }
+
+      console.log(
+        dryRun
+          ? `[DRY RUN] Memory consolidation preview:\n`
+          : `Memory consolidated:\n`,
+      );
+      console.log(`  Before: ${result.before} lines`);
+      console.log(`  After:  ${result.after} lines`);
+      console.log(`  Delta:  ${result.after - result.before} lines\n`);
+      console.log(result.diff);
+
+      if (dryRun && result.before !== result.after) {
+        console.log("\nRun with --apply to write changes.");
+      }
       break;
     }
 
