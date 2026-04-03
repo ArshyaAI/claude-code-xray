@@ -1,0 +1,47 @@
+{
+  "version": "2026.04",
+  "source": "schemastore.org + source analysis",
+  "keys": {
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "allow": { "type": "array" },
+        "deny": { "type": "array" },
+        "defaultMode": {
+          "type": "string",
+          "enum": ["default", "bypassPermissions", "plan", "acceptEdits"]
+        }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "properties": {
+        "PreToolUse": { "type": "array" },
+        "PostToolUse": { "type": "array" }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "filesystem": { "type": "object" },
+        "network": { "type": "object" },
+        "permissions": { "type": "object" }
+      }
+    },
+    "env": { "type": "object" },
+    "model": { "type": "string" },
+    "includeCoAuthoredBy": { "type": "boolean" },
+    "enableAllProjectMcpServers": { "type": "boolean" },
+    "autoUpdaterStatus": { "type": "string" },
+    "mcpServers": { "type": "object" },
+    "features": { "type": "object" },
+    "featureFlags": { "type": "object" },
+    "preferredNotifChannel": { "type": "string" },
+    "theme": { "type": "string" },
+    "verbosityLevel": { "type": "string" },
+    "cleanupPeriodDays": { "type": "number" },
+    "gitConfigAllowList": { "type": "array" },
+    "autoMemoryEnabled": { "type": "boolean" }
+  }
+}
