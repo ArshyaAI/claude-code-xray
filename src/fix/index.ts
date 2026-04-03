@@ -17,6 +17,7 @@ import {
   writeFileSync,
   copyFileSync,
   readdirSync,
+  mkdirSync,
 } from "node:fs";
 import { resolve, dirname, basename } from "node:path";
 import type { Fix, XRayResult } from "../scan/types.js";
@@ -55,6 +56,8 @@ function deepMerge(
 }
 import { generateSafetyFixes } from "./safety-fixer.js";
 import { generateHookFixes } from "./hook-generator.js";
+import { generateCapabilityFixes } from "./capability-fixer.js";
+import { generateContextFixes } from "./context-generator.js";
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
@@ -71,6 +74,8 @@ export function generateFixes(
   const all: Fix[] = [
     ...generateSafetyFixes(result, root),
     ...generateHookFixes(result, root),
+    ...generateCapabilityFixes(result, root),
+    ...generateContextFixes(result, root),
   ];
 
   // Sort highest impact first
@@ -98,63 +103,83 @@ export function applyFix(fix: Fix, dryRun: boolean): void {
   // ── Live mode ──────────────────────────────────────────────────────────────
 
   const targetPath = fix.target_file;
+  const isJsonTarget = targetPath.endsWith(".json");
 
-  // 1. Validate the diff is valid JSON before touching anything
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(fix.diff);
-  } catch (err) {
-    throw new Error(
-      `Fix ${fix.id}: diff is not valid JSON — refusing to apply. Error: ${String(err)}`,
-    );
+  // Ensure parent directory exists
+  const parentDir = dirname(targetPath);
+  if (!existsSync(parentDir)) {
+    mkdirSync(parentDir, { recursive: true });
   }
 
-  // 2. Backup the existing file (if it exists)
-  let backupPath: string | undefined;
-  if (existsSync(targetPath)) {
-    backupPath = `${targetPath}.xray-backup.${Date.now()}`;
-    copyFileSync(targetPath, backupPath);
-    console.log(`  Backed up: ${targetPath} → ${backupPath}`);
-  }
-
-  // 3. Merge fix into CURRENT file state (not overwrite with snapshot)
-  //    This ensures multiple fixes to the same file don't clobber each other.
-  let merged: unknown;
-  if (existsSync(targetPath)) {
+  if (isJsonTarget) {
+    // ── JSON target: parse, merge, verify ──
+    let parsed: unknown;
     try {
-      const current = JSON.parse(readFileSync(targetPath, "utf-8"));
-      merged = deepMerge(current, parsed as Record<string, unknown>);
-    } catch {
-      merged = parsed; // fallback if current file is not valid JSON
-    }
-  } else {
-    merged = parsed;
-  }
-
-  const newContent = JSON.stringify(merged, null, 2) + "\n";
-  try {
-    writeFileSync(targetPath, newContent, "utf-8");
-  } catch (err) {
-    throw new Error(
-      `Fix ${fix.id}: failed to write ${targetPath}. Error: ${String(err)}`,
-    );
-  }
-
-  // 4. Verify the written file parses correctly
-  try {
-    const written = readFileSync(targetPath, "utf-8");
-    JSON.parse(written);
-  } catch (err) {
-    // Roll back if we have a backup
-    if (backupPath !== undefined && existsSync(backupPath)) {
-      copyFileSync(backupPath, targetPath);
+      parsed = JSON.parse(fix.diff);
+    } catch (err) {
       throw new Error(
-        `Fix ${fix.id}: written file failed JSON validation — rolled back from ${backupPath}. Error: ${String(err)}`,
+        `Fix ${fix.id}: diff is not valid JSON — refusing to apply. Error: ${String(err)}`,
       );
     }
-    throw new Error(
-      `Fix ${fix.id}: written file failed JSON validation and no backup found. Error: ${String(err)}`,
-    );
+
+    let backupPath: string | undefined;
+    if (existsSync(targetPath)) {
+      backupPath = `${targetPath}.xray-backup.${Date.now()}`;
+      copyFileSync(targetPath, backupPath);
+      console.log(`  Backed up: ${targetPath} → ${backupPath}`);
+    }
+
+    let merged: unknown;
+    if (existsSync(targetPath)) {
+      try {
+        const current = JSON.parse(readFileSync(targetPath, "utf-8"));
+        merged = deepMerge(current, parsed as Record<string, unknown>);
+      } catch {
+        merged = parsed;
+      }
+    } else {
+      merged = parsed;
+    }
+
+    const newContent = JSON.stringify(merged, null, 2) + "\n";
+    try {
+      writeFileSync(targetPath, newContent, "utf-8");
+    } catch (err) {
+      throw new Error(
+        `Fix ${fix.id}: failed to write ${targetPath}. Error: ${String(err)}`,
+      );
+    }
+
+    try {
+      const written = readFileSync(targetPath, "utf-8");
+      JSON.parse(written);
+    } catch (err) {
+      if (backupPath !== undefined && existsSync(backupPath)) {
+        copyFileSync(backupPath, targetPath);
+        throw new Error(
+          `Fix ${fix.id}: written file failed JSON validation — rolled back from ${backupPath}. Error: ${String(err)}`,
+        );
+      }
+      throw new Error(
+        `Fix ${fix.id}: written file failed JSON validation and no backup found. Error: ${String(err)}`,
+      );
+    }
+  } else {
+    // ── Non-JSON target (e.g. .md): write content directly ──
+    let backupPath: string | undefined;
+    if (existsSync(targetPath)) {
+      backupPath = `${targetPath}.xray-backup.${Date.now()}`;
+      copyFileSync(targetPath, backupPath);
+      console.log(`  Backed up: ${targetPath} → ${backupPath}`);
+    }
+
+    try {
+      writeFileSync(targetPath, fix.diff, "utf-8");
+    } catch (err) {
+      throw new Error(
+        `Fix ${fix.id}: failed to write ${targetPath}. Error: ${String(err)}`,
+      );
+    }
   }
 
   console.log(`  Applied fix : ${fix.id} → ${targetPath}`);
