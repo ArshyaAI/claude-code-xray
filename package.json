@@ -1,6 +1,6 @@
 {
   "name": "claude-code-xray",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "See inside your Claude Code setup. Fix what's broken. Share what works.",
   "type": "commonjs",
   "bin": {

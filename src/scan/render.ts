@@ -99,24 +99,6 @@ export function renderResult(result: XRayResult): string {
   }
   lines.push("");
 
-  // Guardian mascot
-  const guardian = generateGuardian(
-    result.repo,
-    result.overall_score,
-    result.archetype,
-  );
-  const sprite = renderGuardian(guardian, 0);
-  const stageLabel = STAGE_LABELS[guardian.stage];
-  const shinyTag = guardian.shiny ? ` ${YELLOW}*SHINY*${RESET}` : "";
-  lines.push(
-    `  Guardian: ${BOLD}${guardian.species.charAt(0).toUpperCase() + guardian.species.slice(1)}${RESET} [${stageLabel}]${shinyTag}`,
-  );
-  lines.push("");
-  for (const spriteLine of sprite) {
-    lines.push(`  ${DIM}${spriteLine}${RESET}`);
-  }
-  lines.push("");
-
   // Dimension bars
   const dimOrder = ["safety", "capability", "automation", "efficiency"];
   for (const key of dimOrder) {
@@ -131,6 +113,24 @@ export function renderResult(result: XRayResult): string {
     lines.push(`  ${label} ${bar}  ${scoreStr}${alert}`);
   }
 
+  // Guardian mascot — appears after dimension bars
+  const guardian = generateGuardian(
+    result.repo,
+    result.overall_score,
+    result.archetype,
+  );
+  const sprite = renderGuardian(guardian, 0);
+  const stageLabel = STAGE_LABELS[guardian.stage];
+  const speciesName =
+    guardian.species.charAt(0).toUpperCase() + guardian.species.slice(1);
+  const shinyTag = guardian.shiny ? ` ${YELLOW}*SHINY*${RESET}` : "";
+  lines.push("");
+  lines.push(
+    `  ${DIM}Guardian: ${RESET}${BOLD}${speciesName}${RESET} ${DIM}[${stageLabel}]${shinyTag}${RESET}`,
+  );
+  for (const spriteLine of sprite) {
+    lines.push(`  ${DIM}${spriteLine}${RESET}`);
+  }
   lines.push("");
 
   // ─── Panel 1: What You Have ───────────────────────────────────────────

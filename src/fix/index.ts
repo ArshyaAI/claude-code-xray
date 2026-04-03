@@ -88,7 +88,11 @@ export function generateFixes(
  * dryRun = true  → prints the diff to stdout, no files changed
  * dryRun = false → backs up the target file, writes the diff, verifies JSON
  */
-export function applyFix(fix: Fix, dryRun: boolean): void {
+export function applyFix(
+  fix: Fix,
+  dryRun: boolean,
+  silent: boolean = false,
+): void {
   if (dryRun) {
     console.log(`\n[DRY RUN] Fix: ${fix.id}`);
     console.log(`  Description : ${fix.description}`);
@@ -126,7 +130,7 @@ export function applyFix(fix: Fix, dryRun: boolean): void {
     if (existsSync(targetPath)) {
       backupPath = `${targetPath}.xray-backup.${Date.now()}`;
       copyFileSync(targetPath, backupPath);
-      console.log(`  Backed up: ${targetPath} → ${backupPath}`);
+      if (!silent) console.log(`  Backed up: ${targetPath} → ${backupPath}`);
     }
 
     let merged: unknown;
@@ -170,7 +174,7 @@ export function applyFix(fix: Fix, dryRun: boolean): void {
     if (existsSync(targetPath)) {
       backupPath = `${targetPath}.xray-backup.${Date.now()}`;
       copyFileSync(targetPath, backupPath);
-      console.log(`  Backed up: ${targetPath} → ${backupPath}`);
+      if (!silent) console.log(`  Backed up: ${targetPath} → ${backupPath}`);
     }
 
     try {
@@ -182,8 +186,10 @@ export function applyFix(fix: Fix, dryRun: boolean): void {
     }
   }
 
-  console.log(`  Applied fix : ${fix.id} → ${targetPath}`);
-  console.log(`  ${fix.description}`);
+  if (!silent) {
+    console.log(`  Applied fix : ${fix.id} → ${targetPath}`);
+    console.log(`  ${fix.description}`);
+  }
 }
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
