@@ -12,6 +12,9 @@ import { scanAutomation } from "./automation.js";
 import { scanEfficiency } from "./efficiency.js";
 import { computeScore } from "./scoring.js";
 import { detectArchetype } from "../orchestrator/detect-archetype.js";
+import { validateSettings } from "./settings-validator.js";
+import { readJson, getSettingsLocations } from "./utils.js";
+import type { SchemaValidation, SchemaError } from "./types.js";
 
 const VERSION = "0.2.0";
 
@@ -65,6 +68,25 @@ export function runXRay(repoRoot: string = "."): XRayResult {
       target_file: "",
     }));
 
+  // Run settings validation across all scopes
+  const locs = getSettingsLocations(root);
+  const scopeEntries: { scope: string; path: string }[] = [
+    { scope: "user", path: locs.user },
+    { scope: "project-shared", path: locs.projectShared },
+    { scope: "project-local", path: locs.projectLocal },
+  ];
+  const allSchemaErrors: SchemaError[] = [];
+  for (const { scope, path } of scopeEntries) {
+    const data = readJson(path);
+    if (!data) continue;
+    const validation = validateSettings(data, scope);
+    allSchemaErrors.push(...validation.errors);
+  }
+  const settingsValidation: SchemaValidation = {
+    valid: allSchemaErrors.length === 0,
+    errors: allSchemaErrors,
+  };
+
   return {
     timestamp: new Date().toISOString(),
     version: VERSION,
@@ -75,16 +97,7 @@ export function runXRay(repoRoot: string = "."): XRayResult {
     dimensions,
     fixes_available: fixable,
     security_alerts: alerts,
-    settings_validation: {
-      valid: false,
-      errors: [
-        {
-          path: "",
-          message: "Schema validation not yet implemented",
-          scope: "n/a",
-        },
-      ],
-    },
+    settings_validation: settingsValidation,
   };
 }
 
