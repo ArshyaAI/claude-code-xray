@@ -12,9 +12,10 @@ import { EYES } from "./types.js";
 // ─── FNV-1a hash ──────────────────────────────────────────────────────────
 
 function fnv1a(str: string): number {
+  const bytes = new TextEncoder().encode(str);
   let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
+  for (const byte of bytes) {
+    h ^= byte;
     h = Math.imul(h, 16777619);
   }
   return h >>> 0;
