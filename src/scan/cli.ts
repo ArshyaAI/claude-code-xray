@@ -15,6 +15,7 @@
 
 import { runXRay } from "./index.js";
 import { renderResult } from "./render.js";
+import { animateScan, animateFix, isTTY } from "./animate.js";
 import { generateFixes, applyFix } from "../fix/index.js";
 import { badgeMarkdown, badgeSvg } from "../viral/badge.js";
 import { appendHistory, readHistory, renderHistory } from "../viral/history.js";
@@ -60,7 +61,10 @@ function dimsSummary(
   return out;
 }
 
-try {
+async function main(): Promise<void> {
+  const useAnimation =
+    isTTY() && !flags.has("--json") && !flags.has("--no-color");
+
   switch (command) {
     case "scan":
     case undefined: {
@@ -79,6 +83,8 @@ try {
 
       if (flags.has("--json")) {
         console.log(JSON.stringify(result, null, 2));
+      } else if (useAnimation) {
+        await animateScan(result);
       } else {
         console.log(renderResult(result));
       }
@@ -210,31 +216,35 @@ try {
         break;
       }
 
-      console.log(
-        dryRun
-          ? `${fixes.length} fixes available (dry run):\n`
-          : `Applying ${fixes.length} fixes...\n`,
-      );
-
-      let applied = 0;
-      for (const fix of fixes) {
-        applyFix(fix, dryRun);
-        if (!dryRun) applied++;
-        console.log("");
-      }
-
       if (dryRun) {
+        console.log(`${fixes.length} fixes available (dry run):\n`);
+        for (const fix of fixes) {
+          applyFix(fix, true);
+          console.log("");
+        }
         console.log("Run with --apply to execute these fixes.");
       } else {
-        // Re-scan and show delta
+        // Apply fixes
+        let applied = 0;
+        for (const fix of fixes) {
+          applyFix(fix, false);
+          applied++;
+        }
+
+        // Re-scan
         const after = runXRay(".");
         const delta = after.overall_score - result.overall_score;
-        console.log(
-          `\n${result.overall_score} \u2192 ${after.overall_score} ${delta > 0 ? `(+${delta})` : ""}\n`,
-        );
-        console.log(
-          `Applied ${applied} fixes. Backups saved to each file's directory.`,
-        );
+
+        if (useAnimation) {
+          await animateFix(result, after, fixes, applied);
+        } else {
+          console.log(
+            `\n${result.overall_score} \u2192 ${after.overall_score} ${delta > 0 ? `(+${delta})` : ""}\n`,
+          );
+          console.log(
+            `Applied ${applied} fixes. Backups saved to each file's directory.`,
+          );
+        }
 
         appendHistory({
           timestamp: new Date().toISOString(),
@@ -328,8 +338,10 @@ Options:
       console.error("Run 'npx claude-code-xray --help' for usage.");
       process.exit(1);
   }
-} catch (err) {
+}
+
+main().catch((err) => {
   const msg = err instanceof Error ? err.message : String(err);
   console.error(`\n[xray] Error: ${msg}`);
   process.exit(1);
-}
+});
