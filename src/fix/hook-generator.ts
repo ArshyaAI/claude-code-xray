@@ -216,8 +216,102 @@ export function generatePostToolUseHook(
 
 // ─── Aggregate ───────────────────────────────────────────────────────────────
 
+/**
+ * Generate a fix that removes duplicate hook entries from settings.json.
+ * Deduplicates by canonical JSON comparison within each event.
+ */
+function generateHookDedupFix(
+  result: XRayResult,
+  repoRoot: string,
+): Fix | undefined {
+  const dupCheck = Object.values(result.dimensions)
+    .flatMap((d) => d.checks)
+    .find((c) => c.name === "Duplicate hooks" && !c.passed);
+
+  if (!dupCheck) return undefined;
+
+  // Check all settings scopes (not just the first one found)
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (!home) return undefined;
+
+  const candidates = [
+    join(home, ".claude", "settings.json"),
+    join(repoRoot, ".claude", "settings.json"),
+    join(repoRoot, ".claude", "settings.local.json"),
+  ];
+
+  // Find the scope that actually has duplicates
+  for (const settingsPath of candidates) {
+    const settings = readSettingsJson(settingsPath);
+    const hooksMap = settings.hooks as Record<string, unknown> | undefined;
+    if (!hooksMap || typeof hooksMap !== "object") continue;
+
+    const deduped: Record<string, unknown> = {};
+    let removed = 0;
+
+    for (const [event, matchers] of Object.entries(hooksMap)) {
+      if (!Array.isArray(matchers)) {
+        deduped[event] = matchers;
+        continue;
+      }
+      const seen = new Set<string>();
+      const unique: unknown[] = [];
+      for (const entry of matchers) {
+        const key = stableStringify(entry);
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(entry);
+        } else {
+          removed++;
+        }
+      }
+      deduped[event] = unique;
+    }
+
+    if (removed === 0) continue;
+
+    const fixed = { ...settings, hooks: deduped };
+
+    return {
+      id: "automation/deduplicate-hooks",
+      dimension: "automation",
+      description: `Remove ${removed} duplicate hook entries (every hook was running twice)`,
+      diff: JSON.stringify(fixed, null, 2),
+      impact_estimate: 12,
+      security_relevant: false,
+      why_safe:
+        "Removes exact duplicates only (key-order independent comparison). " +
+        "Every unique hook entry is preserved. " +
+        "No hook behavior changes, just eliminates redundant executions that double latency.",
+      target_file: settingsPath,
+    };
+  }
+
+  return undefined;
+}
+
+/** Key-order-independent JSON for structural comparison. */
+function stableStringify(obj: unknown): string {
+  if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
+  if (Array.isArray(obj)) return "[" + obj.map(stableStringify).join(",") + "]";
+  const sorted = Object.keys(obj as Record<string, unknown>).sort();
+  return (
+    "{" +
+    sorted
+      .map(
+        (k) =>
+          JSON.stringify(k) +
+          ":" +
+          stableStringify((obj as Record<string, unknown>)[k]),
+      )
+      .join(",") +
+    "}"
+  );
+}
+
 export function generateHookFixes(result: XRayResult, repoRoot: string): Fix[] {
   const fixes: (Fix | undefined)[] = [
+    generateHookDedupFix(result, repoRoot),
     generatePreToolUseHook(result, repoRoot),
     generatePostToolUseHook(result, repoRoot),
   ];
