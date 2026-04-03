@@ -1,6 +1,6 @@
 {
   "name": "claude-code-xray",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "description": "See inside your Claude Code setup. Fix what's broken. Share what works.",
   "type": "commonjs",
   "bin": {
@@ -34,10 +34,16 @@
     "dist/scan/**/*.js",
     "!dist/scan/__tests__/**",
     "dist/fix/**/*.js",
+    "!dist/fix/__tests__/**",
     "dist/viral/**/*.js",
+    "!dist/viral/__tests__/**",
+    "dist/guardian/**/*.js",
+    "!dist/guardian/__tests__/**",
+    "dist/evolution/**/*.js",
+    "!dist/evolution/__tests__/**",
     "dist/orchestrator/detect-archetype.js",
+    "dist/orchestrator/config.js",
     "dist/orchestrator/history.js",
-    "dist/orchestrator/adopt.js",
     "README.md",
     "LICENSE"
   ],
