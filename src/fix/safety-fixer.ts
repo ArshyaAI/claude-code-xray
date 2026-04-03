@@ -17,14 +17,22 @@ import type { Fix, XRayResult } from "../scan/types.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/**
+ * Resolve which settings file to write fixes to.
+ * User-level settings (~/.claude/settings.json) is the primary target
+ * because that's where permissions, deny rules, and sandbox config live.
+ * Only falls back to project settings if no user settings exist.
+ */
 function resolveSettingsTarget(repoRoot: string): string {
-  const projectSettings = join(repoRoot, ".claude", "settings.json");
-  if (existsSync(projectSettings)) return projectSettings;
   const home = process.env.HOME ?? process.env.USERPROFILE;
   if (!home) {
     throw new Error("HOME or USERPROFILE environment variable is required");
   }
-  return join(home, ".claude", "settings.json");
+  const userSettings = join(home, ".claude", "settings.json");
+  if (existsSync(userSettings)) return userSettings;
+  const projectSettings = join(repoRoot, ".claude", "settings.json");
+  if (existsSync(projectSettings)) return projectSettings;
+  return userSettings; // will be created
 }
 
 function readSettingsJson(path: string): Record<string, unknown> {
