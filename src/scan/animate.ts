@@ -6,6 +6,12 @@
  */
 
 import type { XRayResult, Fix } from "./types.js";
+import { generateGuardian } from "../guardian/generate.js";
+import {
+  renderGuardian,
+  guardianFrameCount,
+  STAGE_LABELS,
+} from "../guardian/sprites.js";
 
 // ─── ANSI ──────────────────────────────────────────────────────────────────
 
@@ -155,6 +161,35 @@ export async function animateScan(result: XRayResult): Promise<void> {
 
     // Score reveal
     await countUp(result.overall_score);
+    writeln();
+
+    // Guardian mascot animation
+    const guardian = generateGuardian(
+      result.repo,
+      result.overall_score,
+      result.archetype,
+    );
+    const stageLabel = STAGE_LABELS[guardian.stage];
+    const shinyTag = guardian.shiny ? ` ${YELLOW}*SHINY*${RESET}` : "";
+    writeln(
+      `  Guardian: ${BOLD}${guardian.species.charAt(0).toUpperCase() + guardian.species.slice(1)}${RESET} [${stageLabel}]${shinyTag}`,
+    );
+    writeln();
+
+    // Cycle through 3 animation frames for ~1.5s
+    const totalFrames = guardianFrameCount();
+    const cycles = 2; // 2 full cycles = 6 frames
+    for (let i = 0; i < totalFrames * cycles; i++) {
+      const sprite = renderGuardian(guardian, i);
+      // Move cursor up to overwrite previous frame (except first)
+      if (i > 0) {
+        write(`${ESC}${sprite.length}A`);
+      }
+      for (const line of sprite) {
+        write(`${CLEAR_LINE}  ${DIM}${line}${RESET}\n`);
+      }
+      await sleep(250);
+    }
     writeln();
 
     // Dimensions scored

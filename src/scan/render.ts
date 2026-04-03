@@ -10,6 +10,8 @@ import type {
   SecurityAlert,
   CheckResult,
 } from "./types.js";
+import { generateGuardian } from "../guardian/generate.js";
+import { renderGuardian, STAGE_LABELS } from "../guardian/sprites.js";
 
 // ─── ANSI helpers ───────────────────────────────────────────────────────────
 
@@ -20,7 +22,6 @@ const RED = "\x1b[31m";
 const YELLOW = "\x1b[33m";
 const GREEN = "\x1b[32m";
 const CYAN = "\x1b[36m";
-const WHITE = "\x1b[37m";
 
 function scoreColor(score: number): string {
   if (score >= 71) return GREEN;
@@ -95,6 +96,24 @@ export function renderResult(result: XRayResult): string {
     lines.push(
       `  ${BOLD}Scored: ${result.dimensions_scored}/4 dimensions${RESET}  ${DIM}(${skippedList})${RESET}`,
     );
+  }
+  lines.push("");
+
+  // Guardian mascot
+  const guardian = generateGuardian(
+    result.repo,
+    result.overall_score,
+    result.archetype,
+  );
+  const sprite = renderGuardian(guardian, 0);
+  const stageLabel = STAGE_LABELS[guardian.stage];
+  const shinyTag = guardian.shiny ? ` ${YELLOW}*SHINY*${RESET}` : "";
+  lines.push(
+    `  Guardian: ${BOLD}${guardian.species.charAt(0).toUpperCase() + guardian.species.slice(1)}${RESET} [${stageLabel}]${shinyTag}`,
+  );
+  lines.push("");
+  for (const spriteLine of sprite) {
+    lines.push(`  ${DIM}${spriteLine}${RESET}`);
   }
   lines.push("");
 
