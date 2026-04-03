@@ -130,6 +130,8 @@ function checkActiveFeatures(repoRoot: string): CheckResult {
       ? `Active: ${active.map((f) => f.codename).join(", ")}`
       : `None of the ${activatable.length} activatable features have their env var set. ` +
         `Try: ${activatable[0]?.env_var ?? "CLAUDE_CODE_COORDINATOR_MODE=1"}`,
+    points: 15,
+    applicable: true,
   };
 }
 
@@ -149,6 +151,8 @@ function checkSchemaValidity(repoRoot: string): CheckResult {
       fix_available: true,
       detail:
         "No settings.json found at any scope. Create one to configure Claude Code.",
+      points: 15,
+      applicable: true,
     };
   }
 
@@ -178,6 +182,8 @@ function checkSchemaValidity(repoRoot: string): CheckResult {
     detail: passed
       ? undefined
       : `Unknown keys may be typos or stale config: ${uniqueUnknown.join(", ")}`,
+    points: 15,
+    applicable: true,
   };
 }
 
@@ -199,6 +205,8 @@ function checkArchetypeSkills(repoRoot: string): CheckResult {
       confidence: "inferred",
       fix_available: false,
       detail: `Archetype '${archetype}' has no specific skill recommendations.`,
+      points: 10,
+      applicable: false,
     };
   }
 
@@ -217,6 +225,8 @@ function checkArchetypeSkills(repoRoot: string): CheckResult {
     detail: passed
       ? undefined
       : `Missing skills for '${archetype}': ${missing.join(", ")}. Install via gstack or manually.`,
+    points: 10,
+    applicable: true,
   };
 }
 
@@ -240,6 +250,8 @@ function checkCoordinatorAvailable(repoRoot: string): CheckResult {
     detail: passed
       ? undefined
       : "Coordinator Mode is off. Multi-agent orchestration (one Claude spawning parallel workers) is not available. Set CLAUDE_CODE_COORDINATOR_MODE=1 in your shell profile.",
+    points: 10,
+    applicable: true,
   };
 }
 
@@ -268,6 +280,8 @@ function checkProjectSettings(repoRoot: string): CheckResult {
     detail: passed
       ? undefined
       : "No project-level settings.json. This repo inherits all config from user-level only. Add .claude/settings.json to customize permissions, hooks, or deny rules per project.",
+    points: 20,
+    applicable: true,
   };
 }
 
@@ -296,6 +310,8 @@ function checkProjectClaudeMd(repoRoot: string): CheckResult {
     detail: passed
       ? undefined
       : "No project-level CLAUDE.md. Claude Code has no project-specific instructions for this repo.",
+    points: 25,
+    applicable: true,
   };
 }
 
@@ -327,16 +343,26 @@ function checkMcpConfig(repoRoot: string): CheckResult {
     detail: passed
       ? undefined
       : "No project-level .mcp.json with MCP servers. Tools like database access, browser, or custom APIs are not wired up for this project.",
+    points: 5,
+    applicable: true,
   };
 }
 
 // ─── Score calculation ────────────────────────────────────────────────────────
 
 function calculateCapabilityScore(checks: CheckResult[]): number {
-  if (checks.length === 0) return 0;
-  const passed = checks.filter((c) => c.passed).length;
-  const raw = Math.round((passed / checks.length) * 100);
-  return Math.max(raw, checks.length > 0 ? 10 : 0);
+  const applicable = checks.filter((c) => c.applicable);
+  if (applicable.length === 0) return 0;
+
+  const maxPoints = applicable.reduce((sum, c) => sum + c.points, 0);
+  const earned = applicable
+    .filter((c) => c.passed)
+    .reduce((sum, c) => sum + c.points, 0);
+
+  const score = Math.round((earned / maxPoints) * 100);
+
+  // Floor at 10 if any applicable check ran
+  return Math.max(score, applicable.length > 0 ? 10 : 0);
 }
 
 // ─── Main scanner ─────────────────────────────────────────────────────────────

@@ -43,6 +43,8 @@ export interface CheckResult {
   confidence: Confidence;
   fix_available: boolean;
   detail?: string | undefined; // human-readable explanation
+  points: number; // how many points this check is worth
+  applicable: boolean; // false if check should be excluded from scoring (no data)
 }
 
 // ─── Security ───────────────────────────────────────────────────────────────

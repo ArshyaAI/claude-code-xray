@@ -176,6 +176,8 @@ function checkCacheHitRatio(aggregated: AggregatedUsage): CheckResult {
       fix_available: false,
       detail:
         "No token usage data found in transcripts. Cannot compute cache hit ratio.",
+      points: 50,
+      applicable: false,
     };
   }
 
@@ -183,6 +185,9 @@ function checkCacheHitRatio(aggregated: AggregatedUsage): CheckResult {
   const pct = Math.round(ratio * 100);
   const passed = ratio >= 0.6;
   const isWarning = ratio >= 0.3 && ratio < 0.6;
+
+  // Partial credit: >=60% = full 50pts, 30-59% = 25pts, <30% = 0pts
+  const earnedPoints = ratio >= 0.6 ? 50 : ratio >= 0.3 ? 25 : 0;
 
   return {
     name: "Cache hit ratio",
@@ -195,8 +200,10 @@ function checkCacheHitRatio(aggregated: AggregatedUsage): CheckResult {
     detail: passed
       ? undefined
       : isWarning
-        ? `Cache hit ratio is ${pct}% (warning: 30–60%). Add a large CLAUDE.md or persistent system prompt to seed the cache.`
+        ? `Cache hit ratio is ${pct}% (warning: 30-60%). Add a large CLAUDE.md or persistent system prompt to seed the cache.`
         : `Cache hit ratio is ${pct}% (fail: <30%). Most tokens are being billed at full price. Seed the prompt cache with project context.`,
+    points: earnedPoints,
+    applicable: true,
   };
 }
 
@@ -217,6 +224,8 @@ function checkSessionActivity(sessionCount: number): CheckResult {
       sessionCount < 3
         ? "Fewer than 3 sessions recorded. Not enough data for reliable efficiency analysis."
         : undefined,
+    points: 30,
+    applicable: true,
   };
 }
 
@@ -235,6 +244,8 @@ function checkCostTrend(costData: CostSummaryFields | null): CheckResult {
       confidence: "inferred",
       fix_available: false,
       detail: "No per-project token summary found in ~/.claude.json.",
+      points: 20,
+      applicable: false,
     };
   }
 
@@ -260,6 +271,8 @@ function checkCostTrend(costData: CostSummaryFields | null): CheckResult {
     confidence: "verified",
     fix_available: false,
     detail: `Input: ${fmt(input)}, Output: ${fmt(output)}, Cache creation: ${fmt(creation)}, Cache read: ${fmt(read)}`,
+    points: 20,
+    applicable: true,
   };
 }
 
@@ -316,33 +329,20 @@ function readCostSummary(repoRoot: string): CostSummaryFields | null {
 
 function calculateEfficiencyScore(
   checks: CheckResult[],
-  sessionCount: number,
+  _sessionCount: number,
 ): number {
-  if (sessionCount === 0) return 0;
+  const applicable = checks.filter((c) => c.applicable);
+  if (applicable.length === 0) return 0;
 
-  // Cache hit ratio: weighted 70% of score
-  // Session activity: weighted 30% of score
-  // Cost trend is informational — always passes, not included in scoring
-  const cacheCheck = checks.find((c) => c.name === "Cache hit ratio");
-  const activityCheck = checks.find((c) => c.name === "Session activity");
+  const maxPoints = applicable.reduce((sum, c) => sum + c.points, 0);
+  const earned = applicable
+    .filter((c) => c.passed)
+    .reduce((sum, c) => sum + c.points, 0);
 
-  let cacheScore = 0;
-  if (cacheCheck !== undefined) {
-    const val = cacheCheck.value;
-    if (typeof val === "string" && val.endsWith("%")) {
-      const pct = parseInt(val, 10);
-      if (!isNaN(pct)) {
-        cacheScore = pct >= 60 ? 100 : pct >= 30 ? 50 : 20;
-      }
-    }
-  }
+  const score = Math.round((earned / maxPoints) * 100);
 
-  let activityScore = 0;
-  if (activityCheck !== undefined) {
-    activityScore = activityCheck.passed ? (sessionCount > 10 ? 100 : 70) : 30;
-  }
-
-  return Math.round(cacheScore * 0.7 + activityScore * 0.3);
+  // Floor at 10 if any applicable check ran
+  return Math.max(score, applicable.length > 0 ? 10 : 0);
 }
 
 // ─── Main scanner ─────────────────────────────────────────────────────────────
@@ -362,10 +362,12 @@ export function scanEfficiency(repoRoot: string): DimensionScore {
           value: "not found",
           target: "session files present",
           source: "~/.claude/projects/",
-          confidence: "verified",
+          confidence: "verified" as const,
           fix_available: false,
           detail:
             "No session data found. Start using Claude Code in this project to collect efficiency metrics.",
+          points: 0,
+          applicable: false,
         },
       ],
     };
@@ -386,10 +388,12 @@ export function scanEfficiency(repoRoot: string): DimensionScore {
           value: "no sessions",
           target: "session files present",
           source: projectDir,
-          confidence: "verified",
+          confidence: "verified" as const,
           fix_available: false,
           detail:
             "No session data found. Start using Claude Code in this project to collect efficiency metrics.",
+          points: 0,
+          applicable: false,
         },
       ],
     };

@@ -28,6 +28,8 @@ function makeCheck(
     source: "test",
     confidence: "verified",
     fix_available: fixAvailable,
+    points: 10,
+    applicable: true,
   };
 }
 

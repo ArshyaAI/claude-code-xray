@@ -160,6 +160,8 @@ function checkHookCoverage(
     source: "settings.json hooks (all scopes)",
     confidence: "verified",
     fix_available: !passed,
+    points: 25,
+    applicable: true,
     ...(missingKeyEvents.length > 0
       ? {
           detail: `Missing key events: ${missingKeyEvents.join(", ")}. Add handlers for automation workflows.`,
@@ -205,6 +207,7 @@ function checkDeadHookScripts(
   }
 
   const passed = deadScripts.length === 0;
+  const noHooksAtAll = allHooks.length === 0;
 
   return {
     name: "Dead hook scripts",
@@ -216,6 +219,8 @@ function checkDeadHookScripts(
     source: "settings.json hooks[*].hooks[*].command",
     confidence: "verified",
     fix_available: !passed,
+    points: 15,
+    applicable: !noHooksAtAll,
     ...(deadScripts.length > 0
       ? {
           detail: `Missing scripts: ${deadScripts.join(", ")}. These hooks are silently skipped or will error at runtime.`,
@@ -286,6 +291,16 @@ function checkDuplicateHooks(
 
   const passed = totalDuplicates === 0;
 
+  // N/A if no hooks exist at all across any settings file
+  const anyHooksExist = settingsFiles.some((s) => {
+    const hooksMap = s.hooks as Record<string, unknown> | undefined;
+    return (
+      hooksMap &&
+      typeof hooksMap === "object" &&
+      Object.keys(hooksMap).length > 0
+    );
+  });
+
   return {
     name: "Duplicate hooks",
     passed,
@@ -294,6 +309,8 @@ function checkDuplicateHooks(
     source: "settings.json hooks",
     confidence: "verified",
     fix_available: !passed,
+    points: 10,
+    applicable: anyHooksExist,
     detail: passed
       ? undefined
       : `${totalDuplicates} duplicate hook entries across ${affectedEvents.length} events: ${affectedEvents.join(", ")}. ` +
@@ -384,6 +401,8 @@ function checkClaudemdHierarchy(repoRoot: string): CheckResult {
     source: "filesystem CLAUDE.md locations",
     confidence: "verified",
     fix_available: !passed,
+    points: 30,
+    applicable: true,
     ...(details.length > 0 ? { detail: details.join(". ") } : {}),
   };
 }
@@ -442,6 +461,8 @@ function checkMemoryHealth(
       source: "~/.claude/projects/*/memory/MEMORY.md",
       confidence: "verified",
       fix_available: true,
+      points: 20,
+      applicable: true,
       detail:
         "No MEMORY.md found in any project memory directory. Claude cannot persist context across sessions." +
         (autoMemoryDisabled
@@ -474,6 +495,8 @@ function checkMemoryHealth(
     source: memoryPath,
     confidence: "verified",
     fix_available: !passed,
+    points: 20,
+    applicable: true,
     ...(issues.length > 0 ? { detail: issues.join(". ") } : {}),
   };
 }
@@ -481,10 +504,18 @@ function checkMemoryHealth(
 // ─── Score calculation ────────────────────────────────────────────────────────
 
 function calculateAutomationScore(checks: CheckResult[]): number {
-  if (checks.length === 0) return 0;
-  const passed = checks.filter((c) => c.passed).length;
-  const raw = Math.round((passed / checks.length) * 100);
-  return Math.max(raw, 10);
+  const applicable = checks.filter((c) => c.applicable);
+  if (applicable.length === 0) return 0;
+
+  const maxPoints = applicable.reduce((sum, c) => sum + c.points, 0);
+  const earned = applicable
+    .filter((c) => c.passed)
+    .reduce((sum, c) => sum + c.points, 0);
+
+  const score = Math.round((earned / maxPoints) * 100);
+
+  // Floor at 10 if any applicable check ran
+  return Math.max(score, applicable.length > 0 ? 10 : 0);
 }
 
 // ─── Main scanner ─────────────────────────────────────────────────────────────
