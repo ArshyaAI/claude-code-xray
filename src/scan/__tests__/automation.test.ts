@@ -41,7 +41,7 @@ describe("scanAutomation", () => {
     }
   });
 
-  it("has 4 checks (hooks, dead scripts, claude.md, memory)", () => {
+  it("has 5 checks (hooks, dead scripts, duplicate hooks, claude.md, memory)", () => {
     const repo = setup();
     const origHome = process.env.HOME;
     process.env.HOME = join(TMP, "fake-home");
@@ -49,10 +49,11 @@ describe("scanAutomation", () => {
     try {
       writeProjectSettings(repo, {});
       const result = scanAutomation(repo);
-      assert.equal(result.checks.length, 4);
+      assert.equal(result.checks.length, 5);
       const names = result.checks.map((c) => c.name);
       assert.ok(names.includes("Hook coverage"));
       assert.ok(names.includes("Dead hook scripts"));
+      assert.ok(names.includes("Duplicate hooks"));
       assert.ok(names.includes("CLAUDE.md hierarchy"));
       assert.ok(names.includes("Memory health"));
     } finally {

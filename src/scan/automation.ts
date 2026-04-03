@@ -224,7 +224,85 @@ function checkDeadHookScripts(
   };
 }
 
-// ─── Check 3: CLAUDE.md hierarchy ────────────────────────────────────────────
+// ─── Check 3: Duplicate hooks ────────────────────────────────────────────────
+
+/**
+ * Key-order-independent JSON serialization for structural comparison.
+ * Ensures {a:1, b:2} and {b:2, a:1} produce the same string.
+ */
+function stableStringify(obj: unknown): string {
+  if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
+  if (Array.isArray(obj)) return "[" + obj.map(stableStringify).join(",") + "]";
+  const sorted = Object.keys(obj as Record<string, unknown>).sort();
+  return (
+    "{" +
+    sorted
+      .map(
+        (k) =>
+          JSON.stringify(k) +
+          ":" +
+          stableStringify((obj as Record<string, unknown>)[k]),
+      )
+      .join(",") +
+    "}"
+  );
+}
+
+/**
+ * Detect duplicate matcher groups within the same hook event.
+ * Two entries are duplicates if they produce the same stable JSON (key-order independent).
+ * Common cause: deepMerge bugs, manual copy-paste, settings sync corruption.
+ */
+function checkDuplicateHooks(
+  settingsFiles: Record<string, unknown>[],
+): CheckResult {
+  let totalDuplicates = 0;
+  const affectedEvents: string[] = [];
+
+  for (const settings of settingsFiles) {
+    const hooksMap = settings.hooks as Record<string, unknown> | undefined;
+    if (!hooksMap || typeof hooksMap !== "object") continue;
+
+    for (const [eventName, matchers] of Object.entries(hooksMap)) {
+      if (!Array.isArray(matchers)) continue;
+      const seen = new Set<string>();
+      let eventDupes = 0;
+      for (const entry of matchers) {
+        const key = stableStringify(entry);
+        if (seen.has(key)) {
+          eventDupes++;
+        } else {
+          seen.add(key);
+        }
+      }
+      if (eventDupes > 0) {
+        totalDuplicates += eventDupes;
+        if (!affectedEvents.includes(eventName)) {
+          affectedEvents.push(eventName);
+        }
+      }
+    }
+  }
+
+  const passed = totalDuplicates === 0;
+
+  return {
+    name: "Duplicate hooks",
+    passed,
+    value: passed ? "no duplicates" : `${totalDuplicates} duplicate(s)`,
+    target: "zero duplicate hook entries",
+    source: "settings.json hooks",
+    confidence: "verified",
+    fix_available: !passed,
+    detail: passed
+      ? undefined
+      : `${totalDuplicates} duplicate hook entries across ${affectedEvents.length} events: ${affectedEvents.join(", ")}. ` +
+        `Each duplicate runs the same command twice per trigger, doubling latency. ` +
+        `Likely caused by a settings merge or sync bug.`,
+  };
+}
+
+// ─── Check 4: CLAUDE.md hierarchy ────────────────────────────────────────────
 
 interface ClaudemdLevel {
   label: string;
@@ -423,6 +501,7 @@ export function scanAutomation(repoRoot: string): DimensionScore {
   const checks: CheckResult[] = [
     checkHookCoverage(settingsFiles),
     checkDeadHookScripts(settingsFiles),
+    checkDuplicateHooks(settingsFiles),
     checkClaudemdHierarchy(resolve(repoRoot)),
     checkMemoryHealth(settingsFiles, resolve(repoRoot)),
   ];
