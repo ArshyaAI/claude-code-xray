@@ -21,6 +21,8 @@ import { badgeMarkdown, badgeSvg } from "../viral/badge.js";
 import { appendHistory, readHistory, renderHistory } from "../viral/history.js";
 import { computeDiff, renderDiff } from "./diff.js";
 import { consolidateMemory } from "../fix/memory-consolidator.js";
+import { generateGuardian } from "../guardian/generate.js";
+import { renderGuardian, STAGE_LABELS } from "../guardian/sprites.js";
 import type { CheckResult } from "./types.js";
 
 const rawArgs = process.argv.slice(2);
@@ -278,6 +280,35 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "guardian": {
+      const result = runXRay(".");
+      const guardian = generateGuardian(
+        result.repo,
+        result.overall_score,
+        result.archetype,
+      );
+      const stageLabel = STAGE_LABELS[guardian.stage];
+      const shinyTag = guardian.shiny ? " *SHINY*" : "";
+      const sprite = renderGuardian(guardian, 0);
+
+      console.log("");
+      console.log(
+        `  Guardian: ${guardian.species.charAt(0).toUpperCase() + guardian.species.slice(1)} [${stageLabel}]${shinyTag}`,
+      );
+      console.log(`  Score: ${result.overall_score}/100`);
+      console.log(`  Archetype: ${result.archetype}`);
+      console.log("");
+      for (const line of sprite) {
+        console.log(`  ${line}`);
+      }
+      console.log("");
+      console.log(
+        `  Stage thresholds: <30 EXPOSED | <60 GUARDED | <80 FORTIFIED | 80+ SENTINEL`,
+      );
+      console.log("");
+      break;
+    }
+
     case "--help":
     case "help": {
       console.log(`
@@ -293,6 +324,7 @@ Usage:
   npx claude-code-xray history      Show score history
   npx claude-code-xray ci           CI gate (exit 1 on failure)
   npx claude-code-xray diff         Compare against last scan
+  npx claude-code-xray guardian     Show your X-Ray Guardian
   npx claude-code-xray --json       Output raw JSON
 
 CI Options:

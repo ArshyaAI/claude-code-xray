@@ -10,6 +10,8 @@ import type {
   SecurityAlert,
   CheckResult,
 } from "./types.js";
+import { generateGuardian } from "../guardian/generate.js";
+import { renderGuardian, STAGE_LABELS } from "../guardian/sprites.js";
 
 // ─── ANSI helpers ───────────────────────────────────────────────────────────
 
@@ -95,6 +97,24 @@ export function renderResult(result: XRayResult): string {
     lines.push(
       `  ${BOLD}Scored: ${result.dimensions_scored}/4 dimensions${RESET}  ${DIM}(${skippedList})${RESET}`,
     );
+  }
+  lines.push("");
+
+  // Guardian mascot
+  const guardian = generateGuardian(
+    result.repo,
+    result.overall_score,
+    result.archetype,
+  );
+  const sprite = renderGuardian(guardian, 0);
+  const stageLabel = STAGE_LABELS[guardian.stage];
+  const shinyTag = guardian.shiny ? ` ${YELLOW}*SHINY*${RESET}` : "";
+  lines.push(
+    `  Guardian: ${BOLD}${guardian.species.charAt(0).toUpperCase() + guardian.species.slice(1)}${RESET} [${stageLabel}]${shinyTag}`,
+  );
+  lines.push("");
+  for (const spriteLine of sprite) {
+    lines.push(`  ${DIM}${spriteLine}${RESET}`);
   }
   lines.push("");
 
