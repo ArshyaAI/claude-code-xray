@@ -226,10 +226,10 @@ async function main(): Promise<void> {
         }
         console.log("Run with --apply to execute these fixes.");
       } else {
-        // Apply fixes
+        // Apply fixes (silent when animated to avoid double output)
         let applied = 0;
         for (const fix of fixes) {
-          applyFix(fix, false);
+          applyFix(fix, false, useAnimation);
           applied++;
         }
 

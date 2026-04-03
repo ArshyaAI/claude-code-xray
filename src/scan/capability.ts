@@ -64,6 +64,20 @@ const ARCHETYPE_SKILLS: Record<string, string[]> = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * Check if an env var is set in process.env OR in any settings.json env block.
+ * Claude Code's settings.json `env` field sets env vars for Claude sessions.
+ */
+function isEnvVarSet(key: string, repoRoot: string): boolean {
+  if (process.env[key] !== undefined) return true;
+  // Check settings.json env blocks
+  for (const settings of getSettingsFiles(repoRoot)) {
+    const envBlock = settings.env as Record<string, string> | undefined;
+    if (envBlock && key in envBlock) return true;
+  }
+  return false;
+}
+
 function getSettingsFiles(repoRoot: string): Record<string, unknown>[] {
   const home = getHome();
   const paths = [
@@ -91,7 +105,7 @@ function listInstalledSkills(): string[] {
 
 // ─── Check: Active features ──────────────────────────────────────────────────
 
-function checkActiveFeatures(): CheckResult {
+function checkActiveFeatures(repoRoot: string): CheckResult {
   const activatable = FEATURE_INVENTORY.filter(
     (f) => f.status === "activatable",
   );
@@ -100,7 +114,7 @@ function checkActiveFeatures(): CheckResult {
     // env_var format: "KEY=VALUE" or just "KEY"
     const key = f.env_var.split("=")[0];
     if (!key) return false;
-    return process.env[key] !== undefined;
+    return isEnvVarSet(key, repoRoot);
   });
 
   const passed = active.length >= 1;
@@ -208,10 +222,12 @@ function checkArchetypeSkills(repoRoot: string): CheckResult {
 
 // ─── Check: Coordinator available ────────────────────────────────────────────
 
-function checkCoordinatorAvailable(): CheckResult {
+function checkCoordinatorAvailable(repoRoot: string): CheckResult {
   const envValue = process.env["CLAUDE_CODE_COORDINATOR_MODE"];
+  const settingsHasIt = isEnvVarSet("CLAUDE_CODE_COORDINATOR_MODE", repoRoot);
   const passed =
-    envValue !== undefined && envValue !== "0" && envValue !== "false";
+    settingsHasIt ||
+    (envValue !== undefined && envValue !== "0" && envValue !== "false");
 
   return {
     name: "Coordinator available",
@@ -327,10 +343,10 @@ function calculateCapabilityScore(checks: CheckResult[]): number {
 
 export function scanCapability(repoRoot: string): DimensionScore {
   const checks: CheckResult[] = [
-    checkActiveFeatures(),
+    checkActiveFeatures(repoRoot),
     checkSchemaValidity(repoRoot),
     checkArchetypeSkills(repoRoot),
-    checkCoordinatorAvailable(),
+    checkCoordinatorAvailable(repoRoot),
     checkProjectSettings(repoRoot),
     checkProjectClaudeMd(repoRoot),
     checkMcpConfig(repoRoot),
