@@ -201,16 +201,35 @@ X-Ray reads your Claude Code configuration files:
 
 ## Commands
 
-| Command                            | What It Does                   |
-| ---------------------------------- | ------------------------------ |
-| `npx claude-code-xray`             | Scan your setup                |
-| `npx claude-code-xray fix`         | Show available fixes (dry-run) |
-| `npx claude-code-xray fix --apply` | Apply fixes with backup        |
-| `npx claude-code-xray badge`       | Generate README badge          |
-| `npx claude-code-xray badge --svg` | Generate standalone SVG badge  |
-| `npx claude-code-xray history`     | Show score history             |
-| `npx claude-code-xray --json`      | Output raw JSON                |
-| `npx claude-code-xray help`        | Show help                      |
+| Command                             | What It Does                            |
+| ----------------------------------- | --------------------------------------- |
+| `npx claude-code-xray`              | Scan your setup (animated in terminal)  |
+| `npx claude-code-xray fix`          | Show available fixes (dry-run)          |
+| `npx claude-code-xray fix --apply`  | Apply fixes with backup + rollback      |
+| `npx claude-code-xray ci`           | CI gate (exit 1 if below threshold)     |
+| `npx claude-code-xray diff`         | Compare against your last scan          |
+| `npx claude-code-xray experiment`   | Prove fixes work (before/after testing) |
+| `npx claude-code-xray badge`        | Generate README badge                   |
+| `npx claude-code-xray history`      | Show score history sparkline            |
+| `npx claude-code-xray export`       | Share your config as JSON               |
+| `npx claude-code-xray adopt <file>` | Import a shared config                  |
+| `npx claude-code-xray consolidate`  | Trim MEMORY.md (preview, --apply)       |
+| `npx claude-code-xray --json`       | Output raw JSON                         |
+
+### CI Integration
+
+```bash
+# Gate PRs on minimum score
+npx claude-code-xray ci --min-score 70
+
+# Gate on safety specifically
+npx claude-code-xray ci --min-safety 50
+
+# Compare against last scan in CI
+npx claude-code-xray diff --json
+```
+
+A [GitHub Action](.github/actions/xray/action.yml) is included for PR quality gating with automatic score comments.
 
 ## Contributing
 
